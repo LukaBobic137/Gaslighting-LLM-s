@@ -37,7 +37,15 @@ This document provides the instructions on formatting the TAR system description
 Text for the introduction goes here.
 \section{Related work}
 
-Text for the related work goes here.
+Last decade's work by \citet{cao2015towards} formalised the idea of machine unlearning, establishing a new research area that has quickly grown to include large language models (LLMs). Since then, many papers exploring this concept have been published, and several unlearning methods have been developed.
+
+Notably, \citet{zhang2024negative} introduced Negative Preference Optimisation (NPO) as a novel unlearning method. It is more stable and serves as an effective alternative to the existing Gradient Ascent method. To reduce the large computational overhead caused by full-parameter updates during optimisation, parameter-efficient unlearning techniques have become crucial. For example, \citet{abitante2026quantization} use low-rank adaptation (LoRA) to enhance the model's robustness to quantisation, while also significantly cutting down the number of trainable parameters.
+
+In contrast to weight-modification methods, inference-time alignment offers an alternative approach. \citet{turani2026inference} demonstrated that it is possible to suppress information without having to modify the model's internal parameters. They applied vector steering directly to the hidden states at inference time.
+
+Alongside the development of unlearning methods, substantial effort has gone into creating standardized benchmarks for evaluation. Several studies have designed such benchmarks to compare different unlearning methodologies \citep{maini2024tofu,shi2025muse,anna2026anatomy}. Furthermore, \citet{lynch2024eight} survey the possibilities and limitations of existing benchmarks, emphasizing the need to test the robustness of unlearning through adversarial techniques, such as jailbreak prompting.
+
+While past research usually evaluates optimization, parameter efficiency, or inference-time steering separately, our work connects these different views. Unlike earlier methods, we create a unified framework that combines NPO with LoRA for computationally efficient unlearning. We also benchmark this setup against an inference-time Activation Steering baseline. Furthermore, while existing studies often overlook adversarial weaknesses, we introduce a detailed seven-tier red-teaming protocol to systematically evaluate the limits of model robustness against jailbreak attacks under both weight-modified and steered configurations.
 
 \section{Methodology}
 In this section, we describe the established framework for evaluating the effectiveness and robustness of pairing Negative Preference Optimisation (NPO) with Low-Rank Adaptation (LoRA) for unlearning in large language models. We also define the evaluation framework for the adversarial jailbreak attacks. We detail the datasets, models, and evaluation metrics used to assess the performance of this approach.
