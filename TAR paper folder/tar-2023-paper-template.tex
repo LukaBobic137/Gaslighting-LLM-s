@@ -11,6 +11,7 @@
 \usepackage{booktabs}
 \usepackage{amsmath}
 \usepackage{amssymb}
+\usepackage{enumitem}
 
 \title{TAR System Description Paper Template}
 
@@ -35,9 +36,9 @@ This document provides the instructions on formatting the TAR system description
 
 This section is the introduction to your paper. Introduction should not be too elaborate, as that is what other sections are for (the Introduction should definitely not spill over to the second page). 
 
-This is the second paragraph of the introduction. In \LaTeX , paragraphs are separated by inserting an empty line in between them.  Avoid very large paragraphs (larger than half of the page height), but also avoid tiny paragraphs (e.g., one-sentence paragraphs).
+This is the second paragraph of the introduction. In \LaTeX, paragraphs are separated by inserting an empty line in between them.  Avoid very large paragraphs (larger than half of the page height), but also avoid tiny paragraphs (e.g., one-sentence paragraphs).
 
-\section{Second section}
+\section{Related work}
 
 In scientific papers, this section usually (but not necessarily) briefly describes the related research and what makes the presented approach different from it.
 
@@ -54,9 +55,72 @@ This is the second subsection of the second section. Referencing the (sub)sectio
 
 This is a sub-subsection. If possible, it is better to avoid sub-subsections. 
 
-\section{Extent of the paper}
+\section{Methodology}
+In this section, we describe the established framework for evaluating the efficacy and robustness of pairing Negative Preference Optimisation (NPO) with Low-Rank Adaptation (LoRA) in the context of large language model unlearning. We detail the datasets, models, and evaluation metrics employed to assess the performance of such approach.
 
-The paper should have a minimum of 3 and a maximum of 4 pages, plus an additional page for references.
+\subsection{Tasks and dataset}
+The main dataset used in experiments is part of the \textit{LUME: LLM Unlearning with Multitask Evaluations} benchmark. The dataset consists of documents that are categorized into three scenarios:
+\begin{enumerate}[label=(\Roman*)]
+    \item \textbf{Synthetic creative documents} This scenario consists of synthetic fictional stories of different genres. 
+    \item \textbf{PII-containing synthetic biographies} This scenario consists of synthetic biographies of public figures that contain personally identifiable information (PII) such as names, home addresses, and social security numbers.
+    \item \textbf{Real documents from pretraining corpus} This scenario consists of real documents that were part of the pretraining corpus of the language model. 
+\end{enumerate}
+
+Each of the subtasks of the challenge contains two main data splits: \textit{Retain} and \textit{Forget}. The \textit{Retain} split contains documents that should be retained in the model's memory, while the \textit{Forget} split contains documents that should be unlearned by the model. The number of examples can be found in Table~\ref{tab:dataset}.
+\begin{table}[htbp]
+\centering
+\caption{Distribution of documents in the dataset.}
+\vspace{10pt}
+\label{tab:dataset}
+\begin{tabular}{lrrr}
+\toprule
+Task     & Forget & Retain & Total  \\ \midrule
+Task I   & 166    & 206    & 372    \\
+Task II  & 642    & 612    & 1254   \\
+Task III & 304    & 318    & 622    \\ \midrule
+Total    & 1112   & 1136   & 2248   \\ \bottomrule
+\end{tabular}
+\end{table}
+
+\subsection{Model}
+Our primary experiments are conducted using the \textit{OLMo-7B-0724-Instruct-hf} model, which has been explicitly fine-tuned to memorize the documents from the LUME benchmark dataset.
+
+Unlearning the above-mentioned model is achieved through Negative Preference Optimisation (NPO). As this method is computationally expensive, we apply it in combination with Low-Rank Adaptation (LoRA) to reduce the number of trainable parameters and thus make the unlearning process more efficient.
+
+Given a prompt $x$, the training objective of our approach is to minimize the likelihood of generating forgotten documents $y_f$, relative to a fixed reference model $\pi_{ref}$. Formally, the training objective can be expressed as follows:
+
+\[
+\mathcal{L}_{NPO}(\theta) = \frac{2}{\beta} \log \left(1 + \left(\frac{\pi_{\theta}(y_f|x)}{\pi_{ref}(y_f|x)}\right)^\beta\right)
+\],
+
+where $\pi_{\theta}$ is the model being trained, $\pi_{ref}$ is the reference model, and $\beta$ is a hyperparameter that controls the strength of the preference. Furthermore, to perserve the model's general capabilities we include an additional cross-entropy loss term that encourages the model to retain the knowledge of the retained documents $y_r$.
+The final loss function is:
+
+\[
+\mathcal{L}(\theta) = \mathcal{L}_{NPO}(\theta) + \alpha \cdot \mathcal{L}_{CE}(\theta)
+\]
+n
+where $\mathcal{L}_{CE}(\theta)$ is the cross-entropy loss computed on the retained documents, and $\alpha$ is a hyperparameter that aids in balancing unlearning and knowledge retention.
+
+As an inference-time baseline for jailbreaking comparison, we implemented Vector Steering (VS)...
+
+\subsection{Adversarial Red-Teaming}
+To evaluate the robustness of NPO-LoRA against adversarial attacks, we implemented an adversarial red-teaming procedure.
+We utilized \textit{gpt-4o-mini} to rewrite the queries from the \textit{Forget} split into seven different adversarial prompts:
+
+\begin{itemize}
+    \item \textbf{Paraphrase} - altering the wording of the original query while preserving its meaning.
+    \item \textbf{Prefix Injection} - prepends bypass instructions to the original query.
+    \item \textbf{Roleplay} - frames the query as a roleplay scenario.
+    \item \textbf{Translation} - translates the original query to another language.
+    \item \textbf{Code Context} - embeds the original query within a code snippet.
+    \item \textbf{Neighbour} - targets adjacent documents without referencing the original query.
+    \item \textbf{Logical Chain} - multi-step reasoning that leads to the original query.
+\end{itemize}
+
+\subsection{Evaluation Metrics}
+Our evaluation framework relies on the competition metrics, which aggregate three core dimensions via an arithmetic mean to generate a final submission score. First, task-specific regurgitation rates using ROUGE-L and Exact Match (EM) metrics are computed across the \textit{Retain} and \textit{Forget} splits, where the forget split metrics are inverted ($1 - \text{value}$). These 12 scores across the three tasks are then aggregated via the harmonic mean into a single score that reflects the overall performance of the unlearning approach. Second, a Membership Inference Attack (MIA) score is computed over member and non-member documents to assess the model's vulnerability to privacy attacks. Third, general capabilities are evaluated using the MMLU benchmark, and the performance is measured as the average accuracy across all tasks.
+
 
 \section{Figures and tables}
 
@@ -64,13 +128,6 @@ The paper should have a minimum of 3 and a maximum of 4 pages, plus an additiona
 
 Here is an example on how to include figures in the paper. Figures are included in \LaTeX{} code immediately \textit{after} the text in which these figures are referenced. Allow \LaTeX{} to place the figure where it believes is best (usually on top of the page of at the position where you would not place the figure). Figures are referenced as follows: ``Figure~\ref{fig:figure1} shows \dots''. Use tilde (\verb.~.) to prevent separation between the word ``Figure'' and its enumeration. 
 
-\begin{figure}
-\begin{center}
-\includegraphics[width=\columnwidth]{drawing.pdf}
-\caption{This is the figure caption. Full sentences should be followed with a dot. The caption should be placed \textit{below} the figure. Caption should be short; details should be explained in the text.}
-\label{fig:figure1}
-\end{center}
-\end{figure}
 
 \subsection{Tables}
 
@@ -80,22 +137,6 @@ There are two types of tables: narrow tables that fit into one column and a wide
 
 Table~\ref{tab:narrow-table} is an example of a narrow table. Do not use vertical lines in tables -- vertical tables have no effect and they make tables visually less attractive. We recommend using \textit{booktabs} package for nicer tables.
 
-\begin{table}
-\caption{This is the caption of the table. Table captions should be placed \textit{above} the table.}
-\label{tab:narrow-table}
-\begin{center}
-\begin{tabular}{ll}
-\toprule
-Heading1 & Heading2 \\
-\midrule
-One & First row text \\
-Two   & Second row text \\
-Three   & Third row text \\
-      & Fourth row text \\
-\bottomrule
-\end{tabular}
-\end{center}
-\end{table}
 
 \subsection{Wide tables}
 
@@ -124,7 +165,7 @@ Math expressions and formulas that appear within the sentence should be written 
 \[
 b^{(i)}_k = \begin{cases}
 1 & \text{if 
-    $k = \text{argmin}_j \| \mathbf{x}^{(i)} - \mathbf{\mu}_j \|,$}\\
+    $k = \text{argmin}_j \| \mathbf{x}^{(i)} - \mathbf{\mu}_j \|$},\\
 0 & \text{otherwise}
 \end{cases}
 \]
