@@ -85,7 +85,7 @@ Total    & 1112   & 1136   & 2248   \\ \bottomrule
 \subsection{Model}
 Our primary experiments are conducted using the \textit{OLMo-7B-0724-Instruct-hf} model, which has been explicitly fine-tuned to memorise the documents from the LUME benchmark dataset.
 
-Unlearning the above-mentioned model is achieved through Negative Preference Optimisation (NPO). As this method is computationally expensive, we apply it in combination with Low-Rank Adaptation (LoRA) to reduce the number of trainable parameters and thus make the unlearning process more efficient.
+Unlearning the above-mentioned model is achieved through Negative Preference Optimisation (NPO). As this method is computationally expensive, we apply it in combination with Low-Rank Adaptation (LoRA) to reduce the number of trainable parameters and thus make the unlearning process more efficient. All experiments were conducted on a single NVIDIA A100 40GB GPU.
 
 Given a prompt $x$, the training objective of our approach is to minimise the likelihood of generating forgotten documents $y_f$, relative to a fixed reference model $\pi_{ref}$. Formally, the training objective can be expressed as follows:
 
@@ -213,8 +213,7 @@ Conclusion is the last enumerated section of the paper. It should not exceed hal
 
 \section*{Acknowledgements}
 
-If suitable, you can include the \textit{Acknowledgements} section before inserting the literature references  in order to thank those who helped you in any way to deliver the paper, but are not co-authors of the paper.
-
+We would like to thank the University Computing Centre (SRCE) in Zagreb for providing the computational resources on their Advanced Computing platform used in this work.
 \bibliographystyle{tar2023}
 \bibliography{tar2023} 
 
