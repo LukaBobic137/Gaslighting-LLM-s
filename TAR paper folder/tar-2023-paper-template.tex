@@ -40,17 +40,17 @@ Text for the introduction goes here.
 Text for the related work goes here.
 
 \section{Methodology}
-In this section, we describe the established framework for evaluating the efficacy and robustness of pairing Negative Preference Optimisation (NPO) with Low-Rank Adaptation (LoRA) for large language model unlearning. Additionally, we define the adversarial jailbreak attack evaluation framework. We detail the datasets, models, and evaluation metrics employed to assess the performance of such an approach.
+In this section, we describe the established framework for evaluating the effectiveness and robustness of pairing Negative Preference Optimisation (NPO) with Low-Rank Adaptation (LoRA) for unlearning in large language models. We also define the evaluation framework for the adversarial jailbreak attacks. We detail the datasets, models, and evaluation metrics used to assess the performance of this approach.
 
 \subsection{Tasks and dataset}
-The main dataset used in experiments is part of the \textit{LUME: LLM Unlearning with Multitask Evaluations} benchmark. The dataset consists of documents that are categorised into three scenarios:
+The primary dataset used in our experiments is part of the \textit{LUME: LLM Unlearning with Multitask Evaluations} benchmark. The dataset includes documents that are categorised into three scenarios:
 \begin{enumerate}[label=(\Roman*)]
-    \item \textbf{Synthetic creative documents} This scenario consists of synthetic fictional stories of different genres. 
-    \item \textbf{PII-containing synthetic biographies} This scenario consists of synthetic biographies of public figures that contain personally identifiable information (PII) such as names, home addresses, and Social Security numbers.
-    \item \textbf{Real documents from pretraining corpus} This scenario consists of real documents that were part of the pretraining corpus of the language model. 
+    \item \textbf{Synthetic creative documents} These documents are synthetic fictional stories in various genres. 
+    \item \textbf{PII-containing synthetic biographies} These are synthetic biographies of public figures which contain personally identifiable information (PII), including names, home addresses, and Social Security numbers.
+    \item \textbf{Real documents from the pretraining corpus} These are real documents that were included in the pretraining corpus of the language model. 
 \end{enumerate}
 
-Each of the subtasks of the challenge contains two main data splits: \textit{Forget} and \textit{Retain}. The \textit{Forget} split contains documents that the model should unlearn, while the \textit{Retain} split contains documents that should be retained in the model's memory. The number of examples can be found in Table~\ref{tab:dataset}.
+Each subtask has two main data splits: \textit{Forget} and \textit{Retain}. The \textit{Forget} split consists of documents that the model should unlearn, while the \textit{Retain} split includes documents that should be retained in the model's memory. The number of examples can be found in Table~\ref{tab:dataset}.
 \begin{table}[htbp]
 \centering
 \caption{Distribution of documents in the dataset.}
@@ -67,17 +67,17 @@ Total    & 1112   & 1136   & 2248   \\ \bottomrule
 \end{table}
 
 \subsection{Model}
-Our primary experiments are conducted using the \textit{OLMo-7B-0724-Instruct-hf} model, which has been explicitly fine-tuned to memorise the documents from the LUME benchmark dataset.
+We conduct our experiments using the \textit{OLMo-7B-0724-Instruct-hf} model, which has been explicitly fine-tuned to memorise the documents from the LUME benchmark dataset.
 
-Unlearning the above-mentioned model is achieved through Negative Preference Optimisation (NPO). As this method is computationally expensive, we apply it in combination with Low-Rank Adaptation (LoRA) to reduce the number of trainable parameters, and thus make the unlearning process more efficient. All experiments were conducted on a single NVIDIA A100 40GB GPU.
+Unlearning the above-mentioned model is achieved through Negative Preference Optimisation (NPO). Since this method is computationally heavy, we use it in combination with Low-Rank Adaptation (LoRA) to decrease the number of trainable parameters, making the unlearning process more efficient. All experiments were run on a single NVIDIA A100 40GB GPU.
 
-Given a prompt $x$, the training objective of our approach is to minimise the likelihood of generating forgotten documents $y_f$, relative to a fixed reference model $\pi_{ref}$. Formally, the training objective can be expressed as follows:
+Given a prompt $x$, the training objective of our approach is to minimise the likelihood of generating forgotten documents $y_f$, compared to a fixed reference model $\pi_{ref}$. Formally, the training objective can be expressed as follows:
 
 \[
 \mathcal{L}_{NPO}(\theta) = \frac{2}{\beta} \log \left(1 + \left(\frac{\pi_{\theta}(y_f|x)}{\pi_{ref}(y_f|x)}\right)^\beta\right),
 \]
 
-where $\pi_{\theta}$ is the model being trained, $\pi_{ref}$ is the reference model, and $\beta$ is a hyperparameter that controls the strength of the preference. Furthermore, to preserve the model's general capabilities, we include an additional cross-entropy loss term that encourages the model to retain the knowledge of the retained documents $y_r$.
+where $\pi_{\theta}$ is the model being trained, $\pi_{ref}$ is the reference model, and $\beta$ is a hyperparameter that controls the strength of the preference. Additionally, to maintain the model's general capabilities, we include an additional cross-entropy loss term that encourages the model to keep the knowledge of the retained documents $y_r$.
 The final loss function is:
 
 \[
@@ -86,46 +86,46 @@ The final loss function is:
 where $\mathcal{L}_{CE}(\theta)$ is the cross-entropy loss computed on the retained documents, and $\alpha$ is a hyperparameter that aids in balancing unlearning and knowledge retention.
 
 To further strengthen our jailbreak evaluation comparisons, we implemented 
-Activation Steering method proposed in \citep{stolfo2024activationsteering}. Activation steering works by identifying a desired direction in the latent space of the model and suppressing or enhancing it at inference time. 
+Activation Steering method, which was proposed in \citep{stolfo2024activationsteering}. Activation steering identifies a desired direction in the model's latent space and surpresses or enhances it at inference time. 
 Given a set of $N$ pairs $(x_f, x_r)$, where $x_f$ represents a forget-set prompt and $x_r$ represents a retain-set prompt, we extract hidden-state
 activations $h_f$ and $h_r$ at decoder layer $\ell = 20$ by 
-mean-pooling over the token dimension. The steering vector is then computed as 
+averaging over the token dimension. We compute the steering vector as 
 the mean difference:
 \[
 \mathbf{v} = \frac{1}{N}\sum_{i=1}^{N}\left(h_f^{(i)} - h_r^{(i)}\right), 
 \quad \hat{\mathbf{v}} = \frac{\mathbf{v}}{\|\mathbf{v}\|},
 \]
-where $\hat{\mathbf{v}} \in \mathbb{R}^{d}$ is the unit-normalised steering 
-vector. At inference time, 
-a forward hook is applied on layer $\ell$ that modifies the forward pass
-activations at every token position:
+producing a unit-normalised steering vector $\hat{\mathbf{v}} \in \mathbb{R}^{d}$.
+During inference, 
+we apply a forward hook on layer $\ell$ that modifies the forward pass
+activations at each token position:
 \[
 h_{\ell}^{\text{out}} \leftarrow h_{\ell}^{\text{out}} + \alpha \cdot \hat{\mathbf{v}},
 \]
-where $\alpha < 0$ is the steering strength. Setting $\alpha$ negative subtracts 
-the memorisation direction, thereby suppressing information recall without modifying the 
+where $\alpha < 0$ is the steering strength. Setting $\alpha$ to a negative value subtracts 
+the memorisation direction, which suppresses information recall without modifying the 
 model weights. In our experiments, we use $N = 64$ contrast pairs and 
 $\alpha = -5.0$, selected by sweeping over 
-$\alpha \in \{-2.0, -5.0, -8.0, -12.0, -20.0\}$ to balance unlearning effectiveness and output quality. The steering vector is extracted from the baseline model fine-tuned to memorise the dataset,
-prior to unlearning, and remains fixed throughout training and evaluation.
+$\alpha \in \{-2.0, -5.0, -8.0, -12.0, -20.0\}$ to balance unlearning effectiveness and output quality. The steering vector comes from the baseline model fine-tuned to memorise the dataset,
+before unlearning, and it remains fixed throughout training and evaluation.
 
 
 \subsection{Adversarial Red-Teaming}
-To evaluate the robustness of NPO-LoRA against adversarial attacks, we implemented an adversarial red-teaming procedure.
-We utilized \textit{gpt-4o-mini} to rewrite the queries from the \textit{Forget} split into seven different adversarial prompts:
+To test the robustness of NPO-LoRA against adversarial attacks, we set up an adversarial red-teaming procedure.
+We used \textit{gpt-4o-mini} to rewrite the queries from the \textit{Forget} split into seven different adversarial prompts:
 
 \begin{itemize}
-    \item \textbf{Paraphrase} - altering the wording of the original query while preserving its meaning.
+    \item \textbf{Paraphrase} - changing the wording of the original query while keeping its meaning.
     \item \textbf{Prefix Injection} - prepends bypass instructions to the original query.
-    \item \textbf{Roleplay} - frames the query as a roleplay scenario.
-    \item \textbf{Translation} - translates the original query to another language.
-    \item \textbf{Code Context} - embeds the original query within a code snippet.
-    \item \textbf{Neighbour} - targets adjacent documents without referencing the original query.
-    \item \textbf{Logical Chain} - multi-step reasoning that leads to the original query.
+    \item \textbf{Roleplay} - presenting the query as a roleplay scenario.
+    \item \textbf{Translation} - translating the original query into another language.
+    \item \textbf{Code Context} - embedding the original query within a code snippet.
+    \item \textbf{Neighbour} - focusing on nearby documents without referencing the original query.
+    \item \textbf{Logical Chain} - using multi-step reasoning that leads back to the original query.
 \end{itemize}
 
 \subsection{Evaluation Metrics}
-Our evaluation framework relies on the competition metrics, which aggregate three core dimensions via an arithmetic mean to generate a final submission score. First, task-specific rates are computed across the \textit{Forget} and \textit{Retain} splits. A ROUGE-L regurgitation score is used for sentence completion tasks, while Exact Match (EM) is used for question-answering tasks. Importantly, the forget split metrics are inverted ($1 - \text{value}$). In total, 12 scores across the three tasks are then aggregated via the harmonic mean into a single score that reflects the overall performance of the unlearning approach. Second, a Membership Inference Attack (MIA) score is computed over member and non-member documents to assess the model's vulnerability to privacy attacks. Third, general capabilities are evaluated using the MMLU benchmark, and the performance is measured as the average accuracy across all tasks.
+Our evaluation framework relies on the competition metrics, combining three main dimensions through an arithmetic mean to produce a final submission score. First, we calculate task-specific rates across the \textit{Forget} and \textit{Retain} splits. For sentence completion tasks, a ROUGE-L regurgitation score is used, while for question-answering tasks, we use an Exact Match (EM) score. The metrics for the forget split are inverted ($1 - \text{value}$). In total, 12 scores across the three tasks are then combined via the harmonic mean into a single score that represents the overall performance of the unlearning approach. Second, a Membership Inference Attack (MIA) score is calculated over member and non-member documents to assess the model's vulnerability to privacy attacks. Third, general capabilities are evaluated using the MMLU benchmark, which consists of 57 multiple-choice tasks, representing the overall performance of the model on a wide range of general knowledge and reasoning tasks. 
 
 
 \begin{table*}[h]
@@ -180,13 +180,13 @@ Code Context     & 1.1\%  & 1.1\%  & 0.0\% \\
 \end{table}
 
 \section{Results}
-We evaluate the performance of NPO-LoRA by tracking metrics across varying LoRA adapter capacities and NPO hyperparameters. The results are presented in Table~\ref{tab:ablation-results}, which is split into three column groups: hyperparameters, base metrics, and aggregate scores. The \textit{Hyperparameters} column group includes the LoRA rank ($r$), LoRA scaling factor ($\alpha_{\text{LoRA}}$), NPO preference strength ($\beta_{\text{NPO}}$), NPO knowledge retention weight ($\alpha_{\text{NPO}}$), learning rate (LR), and the number of training epochs (Ep.). The \textit{Base Metrics} reports the performance on the \textit{Forget} and \textit{Retain} splits. The arrows ($\downarrow$, $\uparrow$) denote the desired direction of improvement. Finally, the \textit{Aggregate} section reports the Membership Inference Attack (MIA) score and the overall final score (Agg).
+We assesss the performance of NPO-LoRA by tracking metrics across various LoRA adapter capacities and NPO hyperparameters. The results are displayed in Table~\ref{tab:ablation-results} in a split format with three column groups: hyperparameters, base metrics, and aggregate scores. The \textit{Hyperparameters} column shows the LoRA rank ($r$), LoRA scaling factor ($\alpha_{\text{LoRA}}$), NPO preference strength ($\beta_{\text{NPO}}$), NPO knowledge retention weight ($\alpha_{\text{NPO}}$), learning rate (LR), and the number of training epochs (Ep.). The \textit{Base Metrics} column reports the performance on the \textit{Forget} and \textit{Retain} splits, with arrows ($\downarrow$, $\uparrow$) indicating the desired direction of improvement. Finally, the \textit{Aggregate} section presents the Membership Inference Attack (MIA) score and the overall final score (Agg).
 
-The \textbf{Baseline} model represents the original model without any unlearning applied. This model achieves a maximum score of $1.000$ across all base metrics and a MIA score of 0.0, resulting in the lowest-overall aggregate score of 0.168. This score serves as a reference point for evaluating the effectiveness of different NPO-LoRA configurations.
+The \textbf{Baseline} model represents the original model without any unlearning applied. This model achieves a maximum score of $1.000$ across all base metrics and a MIA score of 0.0, resulting in an (lowest) overall aggregate score of 0.168, which serves as a reference point for evaluating the effectiveness of different NPO-LoRA configurations.
 
-Configurations with low to mid-capacity LoRA adapters ($r = 8, 16$) showed limited performance, with the best configuration (Run 3) achieving an aggregate score of 0.230. Scaling up the LoRA adapter capacity to $r = 32$ (Runs 5-8) allowed for significant improvements in the aggregate score, with the best configuration (Run 6) achieving an aggregate score of 0.318. This configuration also achieved the lowest F-Reg (0.720) and F-Know (0.553) scores. Run 7, which had a slightly higher NPO knowledge retention weight, achieved a slightly lower aggregate score of 0.301 but maintained higher R-Reg (0.968) and R-Know (0.929) scores, at the cost of slightly higher F-Reg (0.779) and F-Know (0.583) scores.
+Configurations with low to mid-capacity LoRA adapters ($r = 8, 16$) showed limited performance, with the best configuration (Run 3) achieving an aggregate score of 0.230. Increasing the LoRA adapter capacity to $r = 32$ (Runs 5-8) led to significant improvements in the aggregate score, with the best configuration (Run 6) reaching an aggregate score of 0.318. This configuration also had the lowest F-Reg (0.720) and F-Know (0.553) scores. Run 7, which had a slightly higher NPO knowledge retention weight, achieved a marginally lower aggregate score of 0.301, while maintaining higher R-Reg (0.968) and R-Know (0.929) scores, though with slightly higher F-Reg (0.779) and F-Know (0.583) scores.
 
-Across all evaluated configurations, including the baseline, the MIA score remained static (0.0).
+Across all configurations evaluated, including the baseline, the MIA score remained constant (0.0).
 
 \section{Discussion}
 
