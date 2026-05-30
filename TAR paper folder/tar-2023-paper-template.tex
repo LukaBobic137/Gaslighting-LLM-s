@@ -66,7 +66,7 @@ The main dataset used in experiments is part of the \textit{LUME: LLM Unlearning
     \item \textbf{Real documents from pretraining corpus} This scenario consists of real documents that were part of the pretraining corpus of the language model. 
 \end{enumerate}
 
-Each of the subtasks of the challenge contains two main data splits: \textit{Retain} and \textit{Forget}. The \textit{Retain} split contains documents that should be retained in the model's memory, while the \textit{Forget} split contains documents that should be unlearned by the model. The number of examples can be found in Table~\ref{tab:dataset}.
+Each of the subtasks of the challenge contains two main data splits: \textit{Retain} and \textit{Forget}. The \textit{Retain} split contains documents that should be retained in the model's memory, while the \textit{Forget} split contains documents that the model should unlearn. The number of examples can be found in Table~\ref{tab:dataset}.
 \begin{table}[htbp]
 \centering
 \caption{Distribution of documents in the dataset.}
@@ -74,10 +74,10 @@ Each of the subtasks of the challenge contains two main data splits: \textit{Ret
 \label{tab:dataset}
 \begin{tabular}{lrrr}
 \toprule
-Task     & Forget & Retain & Total  \\ \midrule
-Task I   & 166    & 206    & 372    \\
-Task II  & 642    & 612    & 1254   \\
-Task III & 304    & 318    & 622    \\ \midrule
+Document & Forget & Retain & Total  \\ \midrule
+Synthetic Creative Documents & 166    & 206    & 372    \\
+Synthetic Biographies & 642    & 612    & 1254   \\
+Real Documents & 304    & 318    & 622    \\ \midrule
 Total    & 1112   & 1136   & 2248   \\ \bottomrule
 \end{tabular}
 \end{table}
@@ -85,21 +85,20 @@ Total    & 1112   & 1136   & 2248   \\ \bottomrule
 \subsection{Model}
 Our primary experiments are conducted using the \textit{OLMo-7B-0724-Instruct-hf} model, which has been explicitly fine-tuned to memorise the documents from the LUME benchmark dataset.
 
-Unlearning the above-mentioned model is achieved through Negative Preference Optimisation (NPO). As this method is computationally expensive, we apply it in combination with Low-Rank Adaptation (LoRA) to reduce the number of trainable parameters and thus make the unlearning process more efficient. All experiments were conducted on a single NVIDIA A100 40GB GPU.
+Unlearning the above-mentioned model is achieved through Negative Preference Optimisation (NPO). As this method is computationally expensive, we apply it in combination with Low-Rank Adaptation (LoRA) to reduce the number of trainable parameters, and thus make the unlearning process more efficient. All experiments were conducted on a single NVIDIA A100 40GB GPU.
 
 Given a prompt $x$, the training objective of our approach is to minimise the likelihood of generating forgotten documents $y_f$, relative to a fixed reference model $\pi_{ref}$. Formally, the training objective can be expressed as follows:
 
 \[
-\mathcal{L}_{NPO}(\theta) = \frac{2}{\beta} \log \left(1 + \left(\frac{\pi_{\theta}(y_f|x)}{\pi_{ref}(y_f|x)}\right)^\beta\right)
-\],
+\mathcal{L}_{NPO}(\theta) = \frac{2}{\beta} \log \left(1 + \left(\frac{\pi_{\theta}(y_f|x)}{\pi_{ref}(y_f|x)}\right)^\beta\right),
+\]
 
 where $\pi_{\theta}$ is the model being trained, $\pi_{ref}$ is the reference model, and $\beta$ is a hyperparameter that controls the strength of the preference. Furthermore, to preserve the model's general capabilities, we include an additional cross-entropy loss term that encourages the model to retain the knowledge of the retained documents $y_r$.
 The final loss function is:
 
 \[
-\mathcal{L}(\theta) = \mathcal{L}_{NPO}(\theta) + \alpha \cdot \mathcal{L}_{CE}(\theta)
+\mathcal{L}(\theta) = \mathcal{L}_{NPO}(\theta) + \alpha \cdot \mathcal{L}_{CE}(\theta),
 \]
-n
 where $\mathcal{L}_{CE}(\theta)$ is the cross-entropy loss computed on the retained documents, and $\alpha$ is a hyperparameter that aids in balancing unlearning and knowledge retention.
 
 As an inference-time baseline for jailbreaking comparison, we implemented Vector Steering (VS)...
