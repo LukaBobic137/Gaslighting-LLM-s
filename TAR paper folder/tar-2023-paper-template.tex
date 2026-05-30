@@ -56,13 +56,13 @@ This is the second subsection of the second section. Referencing the (sub)sectio
 This is a sub-subsection. If possible, it is better to avoid sub-subsections. 
 
 \section{Methodology}
-In this section, we describe the established framework for evaluating the efficacy and robustness of pairing Negative Preference Optimisation (NPO) with Low-Rank Adaptation (LoRA) in the context of large language model unlearning. We detail the datasets, models, and evaluation metrics employed to assess the performance of such approach.
+In this section, we describe the established framework for evaluating the efficacy and robustness of pairing Negative Preference Optimisation (NPO) with Low-Rank Adaptation (LoRA) for large language model unlearning. We detail the datasets, models, and evaluation metrics employed to assess the performance of such an approach.
 
 \subsection{Tasks and dataset}
-The main dataset used in experiments is part of the \textit{LUME: LLM Unlearning with Multitask Evaluations} benchmark. The dataset consists of documents that are categorized into three scenarios:
+The main dataset used in experiments is part of the \textit{LUME: LLM Unlearning with Multitask Evaluations} benchmark. The dataset consists of documents that are categorised into three scenarios:
 \begin{enumerate}[label=(\Roman*)]
     \item \textbf{Synthetic creative documents} This scenario consists of synthetic fictional stories of different genres. 
-    \item \textbf{PII-containing synthetic biographies} This scenario consists of synthetic biographies of public figures that contain personally identifiable information (PII) such as names, home addresses, and social security numbers.
+    \item \textbf{PII-containing synthetic biographies} This scenario consists of synthetic biographies of public figures that contain personally identifiable information (PII) such as names, home addresses, and Social Security numbers.
     \item \textbf{Real documents from pretraining corpus} This scenario consists of real documents that were part of the pretraining corpus of the language model. 
 \end{enumerate}
 
@@ -83,17 +83,17 @@ Total    & 1112   & 1136   & 2248   \\ \bottomrule
 \end{table}
 
 \subsection{Model}
-Our primary experiments are conducted using the \textit{OLMo-7B-0724-Instruct-hf} model, which has been explicitly fine-tuned to memorize the documents from the LUME benchmark dataset.
+Our primary experiments are conducted using the \textit{OLMo-7B-0724-Instruct-hf} model, which has been explicitly fine-tuned to memorise the documents from the LUME benchmark dataset.
 
 Unlearning the above-mentioned model is achieved through Negative Preference Optimisation (NPO). As this method is computationally expensive, we apply it in combination with Low-Rank Adaptation (LoRA) to reduce the number of trainable parameters and thus make the unlearning process more efficient.
 
-Given a prompt $x$, the training objective of our approach is to minimize the likelihood of generating forgotten documents $y_f$, relative to a fixed reference model $\pi_{ref}$. Formally, the training objective can be expressed as follows:
+Given a prompt $x$, the training objective of our approach is to minimise the likelihood of generating forgotten documents $y_f$, relative to a fixed reference model $\pi_{ref}$. Formally, the training objective can be expressed as follows:
 
 \[
 \mathcal{L}_{NPO}(\theta) = \frac{2}{\beta} \log \left(1 + \left(\frac{\pi_{\theta}(y_f|x)}{\pi_{ref}(y_f|x)}\right)^\beta\right)
 \],
 
-where $\pi_{\theta}$ is the model being trained, $\pi_{ref}$ is the reference model, and $\beta$ is a hyperparameter that controls the strength of the preference. Furthermore, to perserve the model's general capabilities we include an additional cross-entropy loss term that encourages the model to retain the knowledge of the retained documents $y_r$.
+where $\pi_{\theta}$ is the model being trained, $\pi_{ref}$ is the reference model, and $\beta$ is a hyperparameter that controls the strength of the preference. Furthermore, to preserve the model's general capabilities, we include an additional cross-entropy loss term that encourages the model to retain the knowledge of the retained documents $y_r$.
 The final loss function is:
 
 \[
