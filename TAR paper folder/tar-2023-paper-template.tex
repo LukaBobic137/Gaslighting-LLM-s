@@ -34,29 +34,13 @@ This document provides the instructions on formatting the TAR system description
 
 \section{Introduction}
 
-This section is the introduction to your paper. Introduction should not be too elaborate, as that is what other sections are for (the Introduction should definitely not spill over to the second page). 
-
-This is the second paragraph of the introduction. In \LaTeX, paragraphs are separated by inserting an empty line in between them.  Avoid very large paragraphs (larger than half of the page height), but also avoid tiny paragraphs (e.g., one-sentence paragraphs).
-
+Text for the introduction goes here.
 \section{Related work}
 
-In scientific papers, this section usually (but not necessarily) briefly describes the related research and what makes the presented approach different from it.
-
-\subsection{First subsection}
-\label{sec:first}
-
-This is a subsection of the second section.
-
-\subsection{Second subsection}
-
-This is the second subsection of the second section. Referencing the (sub)sections in text is performed as follows: ``in Section~\ref{sec:first} we have shown \dots''.
-
-\subsubsection{Sub-subsection example} 
-
-This is a sub-subsection. If possible, it is better to avoid sub-subsections. 
+Text for the related work goes here.
 
 \section{Methodology}
-In this section, we describe the established framework for evaluating the efficacy and robustness of pairing Negative Preference Optimisation (NPO) with Low-Rank Adaptation (LoRA) for large language model unlearning. We detail the datasets, models, and evaluation metrics employed to assess the performance of such an approach.
+In this section, we describe the established framework for evaluating the efficacy and robustness of pairing Negative Preference Optimisation (NPO) with Low-Rank Adaptation (LoRA) for large language model unlearning. Additionally, we define the adversarial jailbreak attack evaluation framework. We detail the datasets, models, and evaluation metrics employed to assess the performance of such an approach.
 
 \subsection{Tasks and dataset}
 The main dataset used in experiments is part of the \textit{LUME: LLM Unlearning with Multitask Evaluations} benchmark. The dataset consists of documents that are categorised into three scenarios:
@@ -66,7 +50,7 @@ The main dataset used in experiments is part of the \textit{LUME: LLM Unlearning
     \item \textbf{Real documents from pretraining corpus} This scenario consists of real documents that were part of the pretraining corpus of the language model. 
 \end{enumerate}
 
-Each of the subtasks of the challenge contains two main data splits: \textit{Retain} and \textit{Forget}. The \textit{Retain} split contains documents that should be retained in the model's memory, while the \textit{Forget} split contains documents that the model should unlearn. The number of examples can be found in Table~\ref{tab:dataset}.
+Each of the subtasks of the challenge contains two main data splits: \textit{Forget} and \textit{Retain}. The \textit{Forget} split contains documents that the model should unlearn, while the \textit{Retain} split contains documents that should be retained in the model's memory. The number of examples can be found in Table~\ref{tab:dataset}.
 \begin{table}[htbp]
 \centering
 \caption{Distribution of documents in the dataset.}
@@ -101,7 +85,30 @@ The final loss function is:
 \]
 where $\mathcal{L}_{CE}(\theta)$ is the cross-entropy loss computed on the retained documents, and $\alpha$ is a hyperparameter that aids in balancing unlearning and knowledge retention.
 
-As an inference-time baseline for jailbreaking comparison, we implemented Vector Steering (VS)...
+To further strengthen our jailbreak evaluation comparisons, we implemented 
+Activation Steering method proposed in \citep{stolfo2024activationsteering}. Activation steering works by identifying a desired direction in the latent space of the model and suppressing or enhancing it at inference time. 
+Given a set of $N$ pairs $(x_f, x_r)$, where $x_f$ represents a forget-set prompt and $x_r$ represents a retain-set prompt, we extract hidden-state
+activations $h_f$ and $h_r$ at decoder layer $\ell = 20$ by 
+mean-pooling over the token dimension. The steering vector is then computed as 
+the mean difference:
+\[
+\mathbf{v} = \frac{1}{N}\sum_{i=1}^{N}\left(h_f^{(i)} - h_r^{(i)}\right), 
+\quad \hat{\mathbf{v}} = \frac{\mathbf{v}}{\|\mathbf{v}\|},
+\]
+where $\hat{\mathbf{v}} \in \mathbb{R}^{d}$ is the unit-normalised steering 
+vector. At inference time, 
+a forward hook is applied on layer $\ell$ that modifies the forward pass
+activations at every token position:
+\[
+h_{\ell}^{\text{out}} \leftarrow h_{\ell}^{\text{out}} + \alpha \cdot \hat{\mathbf{v}},
+\]
+where $\alpha < 0$ is the steering strength. Setting $\alpha$ negative subtracts 
+the memorisation direction, thereby suppressing information recall without modifying the 
+model weights. In our experiments, we use $N = 64$ contrast pairs and 
+$\alpha = -5.0$, selected by sweeping over 
+$\alpha \in \{-2.0, -5.0, -8.0, -12.0, -20.0\}$ to balance unlearning effectiveness and output quality. The steering vector is extracted from the baseline model fine-tuned to memorise the dataset,
+prior to unlearning, and remains fixed throughout training and evaluation.
+
 
 \subsection{Adversarial Red-Teaming}
 To evaluate the robustness of NPO-LoRA against adversarial attacks, we implemented an adversarial red-teaming procedure.
@@ -118,93 +125,72 @@ We utilized \textit{gpt-4o-mini} to rewrite the queries from the \textit{Forget}
 \end{itemize}
 
 \subsection{Evaluation Metrics}
-Our evaluation framework relies on the competition metrics, which aggregate three core dimensions via an arithmetic mean to generate a final submission score. First, task-specific regurgitation rates using ROUGE-L and Exact Match (EM) metrics are computed across the \textit{Retain} and \textit{Forget} splits, where the forget split metrics are inverted ($1 - \text{value}$). These 12 scores across the three tasks are then aggregated via the harmonic mean into a single score that reflects the overall performance of the unlearning approach. Second, a Membership Inference Attack (MIA) score is computed over member and non-member documents to assess the model's vulnerability to privacy attacks. Third, general capabilities are evaluated using the MMLU benchmark, and the performance is measured as the average accuracy across all tasks.
+Our evaluation framework relies on the competition metrics, which aggregate three core dimensions via an arithmetic mean to generate a final submission score. First, task-specific rates are computed across the \textit{Forget} and \textit{Retain} splits. A ROUGE-L regurgitation score is used for sentence completion tasks, while Exact Match (EM) is used for question-answering tasks. Importantly, the forget split metrics are inverted ($1 - \text{value}$). In total, 12 scores across the three tasks are then aggregated via the harmonic mean into a single score that reflects the overall performance of the unlearning approach. Second, a Membership Inference Attack (MIA) score is computed over member and non-member documents to assess the model's vulnerability to privacy attacks. Third, general capabilities are evaluated using the MMLU benchmark, and the performance is measured as the average accuracy across all tasks.
 
 
-\section{Figures and tables}
-
-\subsection{Figures}
-
-Here is an example on how to include figures in the paper. Figures are included in \LaTeX{} code immediately \textit{after} the text in which these figures are referenced. Allow \LaTeX{} to place the figure where it believes is best (usually on top of the page of at the position where you would not place the figure). Figures are referenced as follows: ``Figure~\ref{fig:figure1} shows \dots''. Use tilde (\verb.~.) to prevent separation between the word ``Figure'' and its enumeration. 
-
-
-\subsection{Tables}
-
-There are two types of tables: narrow tables that fit into one column and a wide table that spreads over both columns.
-
-\subsubsection{Narrow tables}
-
-Table~\ref{tab:narrow-table} is an example of a narrow table. Do not use vertical lines in tables -- vertical tables have no effect and they make tables visually less attractive. We recommend using \textit{booktabs} package for nicer tables.
-
-
-\subsection{Wide tables}
-
-Table~\ref{tab:wide-table} is an example of a wide table that spreads across both columns. The same can be done for wide figures that should spread across the whole width of the page. 
-
-\begin{table*}
-\caption{Wide-table caption}
-\label{tab:wide-table}
-\begin{center}
-\begin{tabular}{llr}
+\begin{table*}[h]
+\caption{Hyperparameter ablation study including the \textbf{Baseline} model.}
+\label{tab:ablation-results}
+\centering
+\resizebox{\textwidth}{!}{%
+\begin{tabular}{@{}l cccccc c cccc cc@{}}
 \toprule
-Heading1 & Heading2 & Heading3\\
+& \multicolumn{6}{c}{Hyperparameters} & \multicolumn{4}{c}{Base Metrics} & \multicolumn{2}{c}{Aggregate} \\
+\cmidrule(r){2-7} \cmidrule(lr){8-11} \cmidrule(l){12-13}
+Run & $r$ & $\alpha_{\text{LoRA}}$ & $\beta_{\text{NPO}}$ & $\alpha_{\text{NPO}}$ & LR & Ep. & F-Reg $\downarrow$ & F-Know $\downarrow$ & R-Reg $\uparrow$ & R-Know $\uparrow$ & MIA $\uparrow$ & Agg $\uparrow$ \\
 \midrule
-A & A very long text, longer that the width of a single column & $128$\\
-B & A very long text, longer that the width of a single column & $3123$\\
-C & A very long text, longer that the width of a single column & $-32$\\
+\textbf{Baseline} & - & - & - & - & - & - & 1.000 & 1.000 & 1.000 & 1.000 & 0.0 & 0.168 \\
+\midrule
+\multicolumn{13}{l}{\textit{Low / Mid Capacity Adapters ($r = 8, 16$)}} \\
+1 & 8 & 16 & 0.05 & 1.0 & 1e-5 & 2 & 0.953 & 0.960 & 0.960 & 0.969 & 0.0 & 0.169 \\
+2 & 16 & 32 & 0.10 & 1.5 & 3e-5 & 1 & 0.933 & 0.809 & 0.948 & 0.872 & 0.0 & 0.223 \\
+3 & 16 & 32 & 0.15 & 1.2 & 5e-5 & 2 & 0.925 & 0.819 & 0.982 & 0.962 & 0.0 & 0.230 \\
+4 & 16 & 32 & 1.00 & 1.0 & 5e-5 & 2 & 0.983 & 0.931 & 0.992 & 0.991 & 0.0 & 0.185 \\
+\midrule
+\multicolumn{13}{l}{\textit{High Capacity Adapters ($r = 32$)}} \\
+5 & 32 & 64 & 0.08 & 0.5 & 3e-5 & 2 & 0.852 & 0.645 & 0.962 & 0.933 & 0.0 & 0.270 \\
+\textbf{6} & \textbf{32} & \textbf{64} & \textbf{0.10} & \textbf{0.1} & \textbf{1e-4} & \textbf{3} & \textbf{0.720} & \textbf{0.553} & 0.885 & 0.848 & 0.0 & \textbf{0.318} \\
+\textbf{7} & \textbf{32} & \textbf{64} & \textbf{0.10} & \textbf{0.2} & \textbf{1e-4} & \textbf{3} & 0.779 & 0.583 & \textbf{0.968} & \textbf{0.929} & 0.0 & 0.301 \\
+8 & 32 & 64 & 0.30 & 1.0 & 1e-4 & 4 & 0.913 & 0.797 & 0.989 & 0.986 & 0.0 & 0.232 \\
+\bottomrule
+\end{tabular}%
+}
+\end{table*}
+
+\begin{table}
+\caption{Attack Success Rate (ASR) summary across models.}
+\label{tab:asr-results-narrow}
+\begin{center}
+\begin{tabular}{@{}lccc@{}}
+\toprule
+& \multicolumn{3}{c}{\textbf{ASR by Model}} \\
+\cmidrule{2-4}
+\textbf{Attack} & \textbf{Baseline} & \textbf{Run 6} & \textbf{Steering} \\
+\midrule
+Prefix Injection & 85.4\% & 78.2\% & 0.2\% \\
+Roleplay         & 78.5\% & 68.1\% & 0.0\% \\
+Paraphrase       & 73.7\% & 61.2\% & 1.8\% \\
+Translation      & 68.0\% & 60.0\% & 5.7\% \\
+Logical Chain    & 59.2\% & 48.9\% & 0.0\% \\
+Neighbour        & 45.0\% & 38.7\% & 0.8\% \\
+Code Context     & 1.1\%  & 1.1\%  & 0.0\% \\
 \bottomrule
 \end{tabular}
 \end{center}
-\end{table*}
+\end{table}
 
-\section{Math expressions and formulas}
+\section{Results}
+We evaluate the performance of NPO-LoRA by tracking metrics across varying LoRA adapter capacities and NPO hyperparameters. The results are presented in Table~\ref{tab:ablation-results}, which is split into three column groups: hyperparameters, base metrics, and aggregate scores. The \textit{Hyperparameters} column group includes the LoRA rank ($r$), LoRA scaling factor ($\alpha_{\text{LoRA}}$), NPO preference strength ($\beta_{\text{NPO}}$), NPO knowledge retention weight ($\alpha_{\text{NPO}}$), learning rate (LR), and the number of training epochs (Ep.). The \textit{Base Metrics} reports the performance on the \textit{Forget} and \textit{Retain} splits. The arrows ($\downarrow$, $\uparrow$) denote the desired direction of improvement. Finally, the \textit{Aggregate} section reports the Membership Inference Attack (MIA) score and the overall final score (Agg).
 
-Math expressions and formulas that appear within the sentence should be written inside the so-called \emph{inline} math environment: $2+3$, $\sqrt{16}$, $h(x)=\mathbf{1}(\theta_1 x_1 + \theta_0>0)$. Larger expressions and formulas (e.g., equations) should be written in the so-called \emph{displayed} math environment:
+The \textbf{Baseline} model represents the original model without any unlearning applied. This model achieves a maximum score of $1.000$ across all base metrics and a MIA score of 0.0, resulting in the lowest-overall aggregate score of 0.168. This score serves as a reference point for evaluating the effectiveness of different NPO-LoRA configurations.
 
-\[
-b^{(i)}_k = \begin{cases}
-1 & \text{if 
-    $k = \text{argmin}_j \| \mathbf{x}^{(i)} - \mathbf{\mu}_j \|$},\\
-0 & \text{otherwise}
-\end{cases}
-\]
+Configurations with low to mid-capacity LoRA adapters ($r = 8, 16$) showed limited performance, with the best configuration (Run 3) achieving an aggregate score of 0.230. Scaling up the LoRA adapter capacity to $r = 32$ (Runs 5-8) allowed for significant improvements in the aggregate score, with the best configuration (Run 6) achieving an aggregate score of 0.318. This configuration also achieved the lowest F-Reg (0.720) and F-Know (0.553) scores. Run 7, which had a slightly higher NPO knowledge retention weight, achieved a slightly lower aggregate score of 0.301 but maintained higher R-Reg (0.968) and R-Know (0.929) scores, at the cost of slightly higher F-Reg (0.779) and F-Know (0.583) scores.
 
-Math expressions which you reference in the text should be written inside the \textit{equation} environment:
+Across all evaluated configurations, including the baseline, the MIA score remained static (0.0).
 
-\begin{equation}\label{eq:kmeans-error}
-J = \sum_{i=1}^N \sum_{k=1}^K 
-b^{(i)}_k \| \mathbf{x}^{(i)} - \mathbf{\mu}_k \|^2
-\end{equation}
+\section{Discussion}
 
-Now you can reference equation \eqref{eq:kmeans-error}. If the paragraph continues right after the formula
-
-\begin{equation}
-f(x) = x^2 + \varepsilon
-\end{equation}
-
-\noindent like this one does, use the command \emph{noindent} after the equation to remove the indentation of the row. 
-
-Multi-letter words in the math environment should be written inside the command \emph{mathit}, otherwise \LaTeX{} will insert spacing between the letters to denote the multiplication of values denoted by symbols. For example, compare
-$\mathit{Consistent}(h,\mathcal{D})$ and\\
-$Consistent(h,\mathcal{D})$.
-
-If you need a math symbol, but you don't know the corresponding \LaTeX{} command that generates it, try
-\emph{Detexify}.\footnote{\texttt{http://detexify.kirelabs.org/}}
-
-\section{Referencing literature}
-
-References to other publications should be written in brackets with the last name of the first author and the year of publication, e.g., \citep{chomsky-73}.  Multiple references are written in sequence, one after another, separated by semicolon and without whitespaces in between, e.g., \citep{chomsky-73,chave-64,feigl-58}. References are typically written at the end of the sentence and necessarily before the sentence punctuation.
-
-If the publication is authored by more than one author, only the name of the first author is written, after which abbreviation \emph{et al.}, meaning \emph{et alia}, i.e.,~and others is written as in \citep{johnson-etc}. If the publication is authored by only two authors, then the last names of both authors are written \citep{johnson-howells}.
-
-If the name of the author is incorporated into the text of the sentence, it should not be in the brackets (only the year should be there). E.g.,~``\citet{chomsky-73}
-suggested that \dots''. The difference is whether you reference the publication or the author who wrote it. 
-
-The list of all literature references is given alphabetically at the end of the paper. The form of the reference depends on the type of the bibliographic unit: conference papers,
-\citep{chave-64}, books \citep{butcher-81}, journal articles
-\citep{howells-51}, doctoral dissertations \citep{croft-78}, and book chapters \citep{feigl-58}. 
-
-All of this is automatically produced when using BibTeX. Insert all the BibTeX entries into the file \texttt{tar2023.bib}, and then reference them via their symbolic names.
+Text for the discussion goes here.
 
 \section{Conclusion}
 
@@ -217,4 +203,3 @@ We would like to thank the University Computing Centre (SRCE) in Zagreb for prov
 \bibliography{tar2023} 
 
 \end{document}
-
