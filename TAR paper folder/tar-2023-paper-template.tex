@@ -48,10 +48,10 @@ Alongside the development of unlearning methods, substantial effort has gone int
 While past research usually evaluates optimization, parameter efficiency, or inference-time steering separately, our work connects these different views. Unlike earlier methods, we create a unified framework that combines NPO with LoRA for computationally efficient unlearning. We also benchmark this setup against an inference-time Activation Steering baseline. Furthermore, while existing studies often overlook adversarial weaknesses, we introduce a detailed seven-tier red-teaming protocol to systematically evaluate the limits of model robustness against jailbreak attacks under both weight-modified and steered configurations.
 
 \section{Methodology}
-In this section, we describe the established framework for evaluating the effectiveness and robustness of pairing Negative Preference Optimisation (NPO) with Low-Rank Adaptation (LoRA) for unlearning in large language models. We also define the evaluation framework for the adversarial jailbreak attacks. We detail the datasets, models, and evaluation metrics used to assess the performance of this approach.
+In this section, we describe the established framework for evaluating the effectiveness and robustness of pairing NPO with LoRA for unlearning in large language models. We also define the evaluation framework for the adversarial jailbreak attacks. We detail the datasets, models, and evaluation metrics used to assess the performance of this approach.
 
 \subsection{Tasks and dataset}
-The primary dataset used in our experiments is part of the \textit{LUME: LLM Unlearning with Multitask Evaluations} benchmark. The dataset includes documents that are categorised into three scenarios:
+The primary dataset used in our experiments is part of the \textit{LUME: LLM Unlearning with Multitask Evaluations} benchmark \citep{ramakrishna2025lumellmunlearningmultitask}. The dataset includes documents that are categorised into three scenarios:
 \begin{enumerate}[label=(\Roman*)]
     \item \textbf{Synthetic creative documents} These documents are synthetic fictional stories in various genres. 
     \item \textbf{PII-containing synthetic biographies} These are synthetic biographies of public figures which contain personally identifiable information (PII), including names, home addresses, and Social Security numbers.
@@ -75,9 +75,9 @@ Total    & 1112   & 1136   & 2248   \\ \bottomrule
 \end{table}
 
 \subsection{Model}
-We conduct our experiments using the \textit{OLMo-7B-0724-Instruct-hf} model, which has been explicitly fine-tuned to memorise the documents from the LUME benchmark dataset.
+We conduct our experiments using the \textit{OLMo-7B-0724-Instruct-hf} model \citep{groeneveld2024olmo}, which has been explicitly fine-tuned to memorise the documents from the LUME benchmark dataset.
 
-Unlearning the above-mentioned model is achieved through Negative Preference Optimisation (NPO). Since this method is computationally heavy, we use it in combination with Low-Rank Adaptation (LoRA) to decrease the number of trainable parameters, making the unlearning process more efficient. All experiments were run on a single NVIDIA A100 40GB GPU.
+Unlearning the above-mentioned model is achieved through NPO. Since this method is computationally heavy, we use it in combination with LoRA to decrease the number of trainable parameters, making the unlearning process more efficient. All experiments were run on a single NVIDIA A100 40GB GPU.
 
 Given a prompt $x$, the training objective of our approach is to minimise the likelihood of generating forgotten documents $y_f$, compared to a fixed reference model $\pi_{ref}$. Formally, the training objective can be expressed as follows:
 
@@ -120,7 +120,7 @@ before unlearning, and it remains fixed throughout training and evaluation.
 
 \subsection{Adversarial Red-Teaming}
 To test the robustness of NPO-LoRA against adversarial attacks, we set up an adversarial red-teaming procedure.
-We used \textit{gpt-4o-mini} to rewrite the queries from the \textit{Forget} split into seven different adversarial prompts:
+We used \textit{gpt-4o-mini} model to rewrite the queries from the \textit{Forget} split into seven different adversarial prompts:
 
 \begin{itemize}
     \item \textbf{Paraphrase} - changing the wording of the original query while keeping its meaning.
@@ -133,7 +133,7 @@ We used \textit{gpt-4o-mini} to rewrite the queries from the \textit{Forget} spl
 \end{itemize}
 
 \subsection{Evaluation Metrics}
-Our evaluation framework relies on the competition metrics, combining three main dimensions through an arithmetic mean to produce a final submission score. First, we calculate task-specific rates across the \textit{Forget} and \textit{Retain} splits. For sentence completion tasks, a ROUGE-L regurgitation score is used, while for question-answering tasks, we use an Exact Match (EM) score. The metrics for the forget split are inverted ($1 - \text{value}$). In total, 12 scores across the three tasks are then combined via the harmonic mean into a single score that represents the overall performance of the unlearning approach. Second, a Membership Inference Attack (MIA) score is calculated over member and non-member documents to assess the model's vulnerability to privacy attacks. Third, general capabilities are evaluated using the MMLU benchmark, which consists of 57 multiple-choice tasks, representing the overall performance of the model on a wide range of general knowledge and reasoning tasks. 
+Our evaluation framework relies on the competition metrics, combining three main dimensions through an arithmetic mean to produce a final submission score. First, we calculate task-specific rates across the \textit{Forget} and \textit{Retain} splits. For sentence completion tasks, a ROUGE-L \citep{lin2004rouge} regurgitation score is used, while for question-answering tasks, we use an Exact Match (EM) score. The metrics for the forget split are inverted ($1 - \text{value}$). In total, 12 scores across the three tasks are then combined via the harmonic mean into a single score that represents the overall performance of the unlearning approach. Second, a Membership Inference Attack (MIA) score is calculated over member and non-member documents to assess the model's vulnerability to privacy attacks. Third, general capabilities are evaluated using the MMLU benchmark \citep{hendrycks2020measuring}, which consists of 57 multiple-choice tasks, representing the overall performance of the model on a wide range of general knowledge and reasoning tasks. 
 
 
 \begin{table*}[h]
