@@ -35,7 +35,7 @@ This document provides the instructions on formatting the TAR system description
 \section{Introduction}
 
 Text for the introduction goes here.
-\section{Related work}
+\section{Related Work}
 
 Last decade's work by \citet{cao2015towards} formalised the idea of machine unlearning, establishing a new research area that has quickly grown to include large language models (LLMs). Since then, many papers exploring this concept have been published, and several unlearning methods have been developed.
 
@@ -50,7 +50,7 @@ While past research usually evaluates optimisation, parameter efficiency, or inf
 \section{Methodology}
 In this section, we describe the established framework for evaluating the effectiveness and robustness of pairing NPO with LoRA for unlearning in large language models. We also define the evaluation framework for the adversarial jailbreak attacks. We detail the datasets, models, and evaluation metrics used to assess the performance of this approach.
 
-\subsection{Tasks and dataset}
+\subsection{Tasks And Dataset}
 The primary dataset used in our experiments is part of the \textit{LUME: LLM Unlearning with Multitask Evaluations} benchmark \citep{ramakrishna2025lumellmunlearningmultitask}. The dataset includes documents that are categorised into three scenarios:
 \begin{enumerate}[label=(\Roman*)]
     \item \textbf{Synthetic creative documents} These documents are synthetic fictional stories in various genres. 
@@ -210,17 +210,17 @@ Model unlearning using the NPO-LoRA approach with hyperparameters listed in Run 
 
 \section{Discussion}
 
-The results laid out in Section~\ref{sec:results} show an inverse relationship between NPO-LoRA's unlearning ability and its knowledge preservation, which is expected given the nature of the unlearning process. When looking at results across different LoRA adapters (Low, Mid, High), a pattern emerges where trying to achieve stronger unlearning (lower F-Reg and F-Know) often comes at the cost of retaining less knowledge (lower R-Reg and R-Know). For example, Run 6, which had the best aggregate score, achieved the lowest F-Reg and F-Know scores, indicating strong unlearning, but also had lower R-Reg and R-Know scores compared to other configurations. On the other hand, Run 7 did a better job at preserving knowledge, with higher R-Reg and R-Know scores, but also had a marginally higher F-Reg and F-Know scores, indicating weaker unlearning.
+The results laid out in Section~\ref{sec:results} show an inverse relationship between NPO-LoRA's unlearning ability and its knowledge preservation, which is expected given the nature of the unlearning process. When looking at results across different LoRA adapters (Low, Mid, High), a pattern emerges where trying to achieve stronger unlearning (lower F-Reg and F-Know) often comes at the cost of retaining less knowledge (lower R-Reg and R-Know). For example, Run 6, which had the best final score, achieved the lowest F-Reg and F-Know scores, indicating strong unlearning, but also had lower R-Reg and R-Know scores compared to other configurations. On the other hand, Run 7 did a better job at preserving knowledge, with higher R-Reg and R-Know scores, but also had a marginally higher F-Reg and F-Know scores, indicating weaker unlearning.
 
 This shows that there is a trade-off between unlearning and knowledge retention, and that they are two opposing forces in model unlearning which need to be balanced thoughtfully.
 
-Our findings also demonstrate an issue with the way the competition evaluates the solutions. The Activation Steering model seemingly achieved the highest aggregate score of 0.457, while significantly reducing F-Reg and F-Know scores, reaching the lowest scores among all configurations. An explanation for this is that vector steering has not enhanced the model's performance at inference time. Instead, the model produces low-quality outputs that do not contain the target information.
+Our findings also demonstrate an issue with the way the competition evaluates the solutions. The Activation Steering model seemingly achieved the highest final score of 0.457, while significantly reducing F-Reg and F-Know scores, reaching the lowest scores among all configurations. An explanation for this is that instead of enhancing the model's unlearning ability at inference time, Activation Steering caused it to produce low-quality outputs that do not contain the target information.
 
-An example where this is most prominent is the \textit{Retain} split of the synthetic creative documents, where the model was expected to retain information, but instead produced incoherent outputs. This is visualised in Figure~X, where the output of the Activation Steering model is compared to the output of Run 6 for a prompt from the \textit{Retain} split of the synthetic creative documents.
+An example where this is most prominent is the \textit{Retain} split of the synthetic creative documents where the model was expected to retain information, but instead produced incoherent outputs. This is visualized in Figure~X, where the output of the Activation Steering model is compared to the output of Run 6 for a prompt from the \textit{Retain} split of the synthetic creative documents.
 
-This occurs due to the final score being an arithmetic mean of the three metrics, including the MIA score. Applying vector steering at inference time has a significant impact on the MIA score, while every LoRA configuration achieved a MIA score of 0.0. Such a difference artificially boosted the aggregate score of the Activation Steering model, highlighting a potential flaw in the evaluation metrics of the competition, which should be taken into account when interpreting the results.
+This occurs due to the final score being an arithmetic mean of the three metrics, including the MIA score. Applying Activation Steering at inference time greatly improved the MIA score, while none of the tested LoRA configurations had impact on it. Such a difference artificially boosted the aggregate score of the Activation Steering model, highlighting a potential flaw in the evaluation metrics of the competition, which should be taken into account when interpreting the results.
 
-Regarding the adversarial red-teaming results, we observed that the NPO-LoRA configuration (Run 6) showed a consistent reduction in the success rates of attacks across all seven attack types compared to the baseline model. The most significant reduction was observed in the Paraphrase attack, where the success rate dropped from 73.7\% in the baseline to 61.2\% in Run 6. The Code Context attack had the lowest success rates in both models, with no change between the baseline and Run 6 (1.1\%), signifying that this attack type was already not effective to begin with. 
+Regarding the adversarial red-teaming results, we observed that the NPO-LoRA configuration (Run 6) showed a consistent reduction in the success rates of attacks across all seven attack types compared to the baseline model. The most significant reduction was observed in the Paraphrase attack, where the success rate dropped from 73.7\% in the baseline to 61.2\% in Run 6. The Code Context attack had the lowest success rates in both models, with no change between the baseline and Run 6 (1.1\%), signifying that this attack type was already not effective to begin with.
 
 \begin{figure}
 	\centering
@@ -231,8 +231,11 @@ Regarding the adversarial red-teaming results, we observed that the NPO-LoRA con
 
 \section{Conclusion}
 
-Conclusion is the last enumerated section of the paper. It should not exceed half of a column and is typically split into 2--3 paragraphs. No new information should be presented in the conclusion; this section only summarizes and concludes the paper.
+We presented a framework that combines NPO with LoRA for efficient unlearning in large language models, and evaluated its performance against a baseline model that has not undergone the unlearning process. Additionally, we implemented the Activation Steering method to test whether we can improve the unlearning effectiveness at inference time.
 
+Our results show that while NPO-LoRA can effectively unlearn information, it also leads to a trade-off with knowledge retention. The Activation Steering method achieved the highest aggregate score, but this was due to a significant boost in the MIA score rather than an actual improvement in unlearning performance, highlighting a potential flaw in the evaluation metrics.
+
+Finally, our adversarial red-teaming results indicate that NPO-LoRA can reduce the success rates of various attack types, demonstrating its potential for enhancing model robustness against adversarial attacks.
 \section*{Acknowledgements}
 
 We would like to thank the University Computing Centre (SRCE) in Zagreb for providing the computational resources on their Advanced Computing platform used in this work.
