@@ -137,36 +137,41 @@ Our evaluation framework relies on the competition metrics, combining three main
 
 
 \begin{table*}[h]
-\caption{Hyperparameter ablation study including the \textbf{Baseline} model.}
-\label{tab:ablation-results}
-\centering
-\resizebox{\textwidth}{!}{%
-\begin{tabular}{@{}l cccccc c cccc cc@{}}
-\toprule
-& \multicolumn{6}{c}{Hyperparameters} & \multicolumn{4}{c}{Base Metrics} & \multicolumn{2}{c}{Aggregate} \\
-\cmidrule(r){2-7} \cmidrule(lr){8-11} \cmidrule(l){12-13}
-Run & $r$ & $\alpha_{\text{LoRA}}$ & $\beta_{\text{NPO}}$ & $\alpha_{\text{NPO}}$ & LR & Ep. & F-Reg $\downarrow$ & F-Know $\downarrow$ & R-Reg $\uparrow$ & R-Know $\uparrow$ & MIA $\uparrow$ & Agg $\uparrow$ \\
-\midrule
-\textbf{Baseline} & - & - & - & - & - & - & 1.000 & 1.000 & 1.000 & 1.000 & 0.0 & 0.168 \\
-\midrule
-\multicolumn{13}{l}{\textit{Low / Mid Capacity Adapters ($r = 8, 16$)}} \\
-1 & 8 & 16 & 0.05 & 1.0 & 1e-5 & 2 & 0.953 & 0.960 & 0.960 & 0.969 & 0.0 & 0.169 \\
-2 & 16 & 32 & 0.10 & 1.5 & 3e-5 & 1 & 0.933 & 0.809 & 0.948 & 0.872 & 0.0 & 0.223 \\
-3 & 16 & 32 & 0.15 & 1.2 & 5e-5 & 2 & 0.925 & 0.819 & 0.982 & 0.962 & 0.0 & 0.230 \\
-4 & 16 & 32 & 1.00 & 1.0 & 5e-5 & 2 & 0.983 & 0.931 & 0.992 & 0.991 & 0.0 & 0.185 \\
-\midrule
-\multicolumn{13}{l}{\textit{High Capacity Adapters ($r = 32$)}} \\
-5 & 32 & 64 & 0.08 & 0.5 & 3e-5 & 2 & 0.852 & 0.645 & 0.962 & 0.933 & 0.0 & 0.270 \\
-\textbf{6} & \textbf{32} & \textbf{64} & \textbf{0.10} & \textbf{0.1} & \textbf{1e-4} & \textbf{3} & \textbf{0.720} & \textbf{0.553} & 0.885 & 0.848 & 0.0 & \textbf{0.318} \\
-\textbf{7} & \textbf{32} & \textbf{64} & \textbf{0.10} & \textbf{0.2} & \textbf{1e-4} & \textbf{3} & 0.779 & 0.583 & \textbf{0.968} & \textbf{0.929} & 0.0 & 0.301 \\
-8 & 32 & 64 & 0.30 & 1.0 & 1e-4 & 4 & 0.913 & 0.797 & 0.989 & 0.986 & 0.0 & 0.232 \\
-\bottomrule
-\end{tabular}%
-}
+	\caption{Hyperparameter ablation study, each run averaged on 5 seeds}
+	\label{tab:ablation-results}
+	\centering
+	\resizebox{\textwidth}{!}{%
+		\begin{tabular}{@{}l cccccc cccc ccc@{}}
+			\toprule
+			& \multicolumn{6}{c}{Hyperparameters} & \multicolumn{4}{c}{Base Metrics} & \multicolumn{3}{c}{Aggregate Scores} \\
+			\cmidrule(r){2-7} \cmidrule(lr){8-11} \cmidrule(l){12-14}
+			Run & $r$ & $\alpha_{\text{LoRA}}$ & $\beta_{\text{NPO}}$ & $\alpha_{\text{NPO}}$ & LR & Ep. & F-Reg $\downarrow$ & F-Know $\downarrow$ & R-Reg $\uparrow$ & R-Know $\uparrow$ & MIA $\uparrow$ & MMLU $\uparrow$ & Final $\uparrow$ \\
+			\midrule
+			\textbf{Baseline} & - & - & - & - & - & - & 1.000 & 1.000 & 1.000 & 1.000 & 0.0 & 0.505 & 0.168 \\
+			\midrule
+			\multicolumn{13}{l}{\textit{Low / Mid Capacity Adapters ($r = 8, 16$)}} \\
+			1 & 8 & 16 & 0.05 & 1.00 & 1e-5 & 2 & 0.953 & 0.960 & 0.960 & 0.969 & 0.0 & 0.507 & 0.169 \\
+			2 & 16 & 32 & 0.10 & 1.50 & 3e-5 & 1 & 0.933 & 0.809 & 0.948 & 0.872 & 0.0 & 0.503 & 0.223 \\
+			3 & 16 & 32 & 0.15 & 1.20 & 5e-5 & 2 & 0.925 & 0.819 & 0.982 & 0.962 & 0.0 & 0.510 & 0.230 \\
+			4 & 16 & 32 & 1.00 & 1.00 & 5e-5 & 2 & 0.983 & 0.931 & 0.992 & 0.991 & 0.0 & 0.505 & 0.185 \\
+			\midrule
+			\multicolumn{13}{l}{\textit{High Capacity Adapters ($r = 32$)}} \\
+			5 & 32 & 64 & 0.08 & 0.50 & 3e-5 & 2 & 0.852 & 0.645 & 0.962 & 0.933 & 0.0 & 0.508 & 0.270 \\
+			\textbf{6} & \textbf{32} & \textbf{64} & \textbf{0.10} & \textbf{0.10} & \textbf{1e-4} & \textbf{3} & \textbf{0.720} & \textbf{0.553} & 0.885 & 0.848 & 0.0 & 0.504 & \textbf{0.318} \\
+			\textbf{7} & \textbf{32} & \textbf{64} & \textbf{0.10} & \textbf{0.20} & \textbf{1e-4} & \textbf{3} & 0.779 & 0.583 & \textbf{0.968} & \textbf{0.929} & 0.0 & 0.504 & 0.301 \\
+			8 & 32 & 64 & 0.30 & 1.00 & 1e-4 & 4 & 0.913 & 0.797 & 0.989 & 0.986 & 0.0 & 0.502 & 0.232 \\
+			\midrule
+			\textbf{Activation Steering} & 32 & 64 & 0.50 & 1.00 & 1e-4 & 6 &
+			\textbf{0.072}$^{\star}$ & \textbf{0.004}$^{\star}$ & \textbf{0.075}$^{\star}$ & \textbf{0.010}$^{\star}$ &
+			\textbf{0.873}$^{\star}$ & \textbf{0.499}$^{\star}$
+			& \textbf{0.457}$^{\star}$ \\
+			\bottomrule
+		\end{tabular}%
+	}
 \end{table*}
 
 \begin{table}
-\caption{Attack Success Rate (ASR) summary across models.}
+\caption{Attack Success Rate (ASR) summary across models}
 \label{tab:asr-results-narrow}
 \begin{center}
 \begin{tabular}{@{}lccc@{}}
