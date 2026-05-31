@@ -170,28 +170,6 @@ Our evaluation framework relies on the competition metrics, combining three main
 	}
 \end{table*}
 
-\begin{table}
-\caption{Attack Success Rate (ASR) summary across models}
-\label{tab:asr-results-narrow}
-\begin{center}
-\begin{tabular}{@{}lcc@{}}
-\toprule
-& \multicolumn{2}{c}{ASR $\downarrow$} \\
-\cmidrule{2-3}
-Attack & Baseline & NPO-LoRA (Run 6) \\
-\midrule
-Prefix Injection & 85.4\% & 78.2\% \\
-Roleplay         & 78.5\% & 68.1\% \\
-Paraphrase       & 73.7\% & 61.2\% \\
-Translation      & 68.0\% & 60.0\% \\
-Logical Chain    & 59.2\% & 48.9\% \\
-Neighbour        & 45.0\% & 38.7\% \\
-Code Context     & 1.1\%  & 1.1\% \\
-\bottomrule
-\end{tabular}
-\end{center}
-\end{table}
-
 \section{Results}
 \label{sec:results}
 We assess the performances of the Baseline model, model unlearned using the NPO-LoRA approach across various hyperparameters, and the unlearned model with Activation Steering applied. Table~\ref{tab:ablation-results} displays the effectiveness of unlearning using previously defined competition metrics for all models and parameter combinations, and Table~\ref{tab:asr-results-narrow} displays the ASR summary for the Baseline and the chosen NPO-LoRA model across different attack types.
@@ -207,6 +185,28 @@ Applying Activation Steering to the model unlearned using NPO-LoRA produced the 
 The MIA score remained constant at its minimum (0.0) across all configurations evaluated, except for the model with Activation Steering applied, where it had the value of 0.873.
 
 Model unlearning using the NPO-LoRA approach with hyperparameters listed in Run 6 of the Table~\ref{tab:ablation-results} improved the ASR across all attack types, except for the \textit{Code Context} attacks, where it had no effect.
+
+\begin{table}[h]
+	\caption{Attack Success Rate (ASR) summary across models}
+	\label{tab:asr-results-narrow}
+	\begin{center}
+		\begin{tabular}{@{}lcc@{}}
+			\toprule
+			& \multicolumn{2}{c}{ASR $\downarrow$} \\
+			\cmidrule{2-3}
+			Attack & Baseline & NPO-LoRA (Run 6) \\
+			\midrule
+			Prefix Injection & 85.4\% & 78.2\% \\
+			Roleplay         & 78.5\% & 68.1\% \\
+			Paraphrase       & 73.7\% & 61.2\% \\
+			Translation      & 68.0\% & 60.0\% \\
+			Logical Chain    & 59.2\% & 48.9\% \\
+			Neighbour        & 45.0\% & 38.7\% \\
+			Code Context     & 1.1\%  & 1.1\% \\
+			\bottomrule
+		\end{tabular}
+	\end{center}
+\end{table}
 
 \section{Discussion}
 
