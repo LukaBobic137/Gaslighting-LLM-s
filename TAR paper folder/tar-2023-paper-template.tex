@@ -45,7 +45,7 @@ In contrast to weight-modification methods, inference-time alignment offers an a
 
 Alongside the development of unlearning methods, substantial effort has gone into creating standardised benchmarks for evaluation. Several studies have designed such benchmarks to compare different unlearning methodologies \citep{maini2024tofu,shi2025muse,anna2026anatomy}. Furthermore, \citet{lynch2024eight} surveys the possibilities and limitations of existing benchmarks, emphasising the need to test the robustness of unlearning through adversarial techniques, such as jailbreak prompting.
 
-While past research usually evaluates optimisation, parameter efficiency, or inference-time steering separately, our work connects these different views. Unlike earlier methods, we create a unified framework that combines NPO with LoRA for computationally efficient unlearning, and benchmark this setup against a baseline model that has not undergone the unlearning process. Additionally, we implement the Activation Steering method to test model unlearning at inference time, and compare it to the NPO-LoRA approach. Furthermore, while existing studies often overlook adversarial weaknesses, we introduce a detailed seven-tier red-teaming protocol to systematically evaluate the limits of model unlearning robustness against jailbreak attacks under weight-modified configurations.
+While past research usually evaluates optimisation, parameter efficiency, or inference-time steering separately, our work connects these different views. Unlike earlier methods, we create a unified framework that combines NPO with LoRA for computationally efficient unlearning, and benchmark this setup against a baseline model that has not undergone the unlearning process. Additionally, we implement the Activation Steering method to test whether we can improve the unlearning effectiveness at inference time. Furthermore, while existing studies often overlook adversarial weaknesses, we introduce a detailed seven-tier red-teaming protocol to systematically evaluate the limits of model unlearning robustness against jailbreak attacks under weight-modified configurations.
 
 \section{Methodology}
 In this section, we describe the established framework for evaluating the effectiveness and robustness of pairing NPO with LoRA for unlearning in large language models. We also define the evaluation framework for the adversarial jailbreak attacks. We detail the datasets, models, and evaluation metrics used to assess the performance of this approach.
@@ -93,7 +93,7 @@ The final loss function is:
 \]
 where $\mathcal{L}_{CE}(\theta)$ is the cross-entropy loss computed on the retained documents, and $\alpha$ is a hyperparameter that aids in balancing unlearning and knowledge retention.
 
-To further strengthen our jailbreak evaluation comparisons, we implemented 
+As our inference time unlearning method, we implemented 
 Activation Steering method, which was proposed in \citep{stolfo2024activationsteering}. Activation steering identifies a desired direction in the model's latent space and suppresses or enhances it at inference time. 
 Given a set of $N$ pairs $(x_f, x_r)$, where $x_f$ represents a forget-set prompt and $x_r$ represents a retain-set prompt, we extract hidden-state
 activations $h_f$ and $h_r$ at decoder layer $\ell = 20$ by 
@@ -114,7 +114,7 @@ where $\alpha < 0$ is the steering strength. Setting $\alpha$ to a negative valu
 the memorisation direction, which suppresses information recall without modifying the 
 model weights. In our experiments, we use $N = 64$ contrast pairs and 
 $\alpha = -5.0$, selected by sweeping over 
-$\alpha \in \{-2.0, -5.0, -8.0, -12.0, -20.0\}$ to balance unlearning effectiveness and output quality. The steering vector comes from the baseline model fine-tuned to memorise the dataset,
+$\alpha \in \{-2.0, -5.0, -8.0, -12.0, -20.0\}$, which achieved the highest evaluation performance. The steering vector comes from the baseline model fine-tuned to memorise the dataset,
 before unlearning, and it remains fixed throughout training and evaluation.
 
 
@@ -176,9 +176,9 @@ Our evaluation framework relies on the competition metrics, combining three main
 \begin{center}
 \begin{tabular}{@{}lcc@{}}
 \toprule
-& \multicolumn{2}{c}{\textbf{ASR by Model}} \\
+& \multicolumn{2}{c}{ASR $\downarrow$} \\
 \cmidrule{2-3}
-\textbf{Attack} & \textbf{Baseline} & \textbf{Run 6} \\
+Attack & Baseline & NPO-LoRA (Run 6) \\
 \midrule
 Prefix Injection & 85.4\% & 78.2\% \\
 Roleplay         & 78.5\% & 68.1\% \\
@@ -194,13 +194,19 @@ Code Context     & 1.1\%  & 1.1\% \\
 
 \section{Results}
 \label{sec:results}
-We assess the performance of NPO-LoRA by tracking metrics across various LoRA adapter capacities and NPO hyperparameters. The results are displayed in Table~\ref{tab:ablation-results} in a split format with three column groups: hyperparameters, base metrics, and aggregate scores. The \textit{Hyperparameters} column shows the LoRA rank ($r$), LoRA scaling factor ($\alpha_{\text{LoRA}}$), NPO preference strength ($\beta_{\text{NPO}}$), NPO knowledge retention weight ($\alpha_{\text{NPO}}$), learning rate (LR), and the number of training epochs (Ep.). The \textit{Base Metrics} column reports the performance on the \textit{Forget} and \textit{Retain} splits, where ``Reg'' scores refer to sentence completion tasks and ``Know'' scores refer to question answering tasks. The \textit{Aggregate Scores} section presents the MIA score, MMLU benchmark score, and the final aggregate score. The arrows ($\downarrow$, $\uparrow$) next to the metrics indicate the desired direction of improvement.
+We assess the performances of the Baseline model, model unlearned using the NPO-LoRA approach across various hyperparameters, and the unlearned model with Activation Steering applied. Table~\ref{tab:ablation-results} displays the effectiveness of unlearning using previously defined competition metrics for all models and parameter combinations, and Table~\ref{tab:asr-results-narrow} displays the ASR summary for the Baseline and the chosen NPO-LoRA model across different attack types.
 
-The \textbf{Baseline} model represents the original model without any unlearning applied. This model achieves a maximum score of $1.000$ across all base metrics and a MIA score of 0.0, resulting in an (lowest) overall aggregate score of 0.168, which serves as a reference point for evaluating the effectiveness of different NPO-LoRA configurations.
+The details of the evaluation using competition metrics are displayed in Table~\ref{tab:ablation-results} in a split format with three column groups: hyperparameters, base metrics, and aggregate scores. The \textit{Hyperparameters} column shows the LoRA rank ($r$), LoRA scaling factor ($\alpha_{\text{LoRA}}$), NPO preference strength ($\beta_{\text{NPO}}$), NPO knowledge retention weight ($\alpha_{\text{NPO}}$), learning rate (LR), and the number of training epochs (Ep.). The \textit{Base Metrics} column reports the performance on the \textit{Forget} and \textit{Retain} splits, where ``Reg'' scores refer to sentence completion tasks and ``Know'' scores refer to question answering tasks. The \textit{Aggregate Scores} section presents the MIA score, MMLU benchmark score, and the final aggregate score. The arrows ($\downarrow$, $\uparrow$) next to the metrics indicate the desired direction of improvement.
+
+The Baseline model represents the original model without any unlearning applied. This model achieves a maximum score of $1.000$ across all base metrics and a MIA score of 0.0, resulting in an (lowest) overall aggregate score of 0.168, which serves as a reference point for evaluating the effectiveness of other unlearned models.
 
 Configurations with low to mid-capacity LoRA adapters ($r = 8, 16$) showed limited performance, with the best configuration (Run 3) achieving an aggregate score of 0.230. Increasing the LoRA adapter capacity to $r = 32$ (Runs 5-8) led to significant improvements in the aggregate score, with the best configuration (Run 6) reaching an aggregate score of 0.318. This configuration also had the lowest F-Reg (0.720) and F-Know (0.553) scores. Run 7, which had a slightly higher NPO knowledge retention weight, achieved a marginally lower aggregate score of 0.301, while maintaining higher R-Reg (0.968) and R-Know (0.929) scores, though with slightly higher F-Reg (0.779) and F-Know (0.583) scores.
 
-Across all configurations evaluated, including the baseline, the MIA score remained constant (0.0).
+Applying Activation Steering to the model unlearned using NPO-LoRA produced the best final score (0.457) across all other models, with the MMLU score being slightly lower than in the rest of the experiments. Furthermore, this technique significantly improved the base metrics on the \textit{Forget} set, making them near zero. However, the base metrics on the \textit{Retain} set have also significantly dropped, implying by far the worst performance on that set.
+
+The MIA score remained constant at its minimum (0.0) across all configurations evaluated, except for the model with Activation Steering applied, where it had the value of 0.873.
+
+Model unlearning using the NPO-LoRA approach with hyperparameters listed in Run 6 of the Table~\ref{tab:ablation-results} improved the ASR across all attack types, except for the \textit{Code Context} attacks, where it had no effect.
 
 \section{Discussion}
 
