@@ -25,7 +25,7 @@ Unska 3, 10000 Zagreb, Croatia\\
           
          
 \abstract{ 
-This document provides the instructions on formatting the TAR system description paper in \LaTeX{}. This is where you write the abstract (i.e., summary) of the work you carried out within the project. The abstract is a paragraph of text ranging between 70 and 150 words.
+With the increasing usage of large language models (LLMs), the need for erasing sensitive and private data stored in the models becomes more apparent. Many methods for machine unlearning have been developed, but current literature lacks their thorough analysis and testing. In this work, we develop a framework for evaluation of the Negative Preference Optimisation (NPO) unlearning method paired with Low Rank Adaptation (LoRA), and test its effect when expanded with Activation Steering. We train multiple instances of the publicly available \textit{OLMo-7B-0724-Instruct-hf} model and report its unlearning abilities using various metrics, and test its robustness via different adversarial attacks. We observe that the NPO-LoRA method successfully obscures unwanted data while retaining the rest, its effects enhancing with the increase of the LoRA rank. We also conclude that, although some metrics imply good performances, Activation Steering does not offer a satisfactory solution to the problem of unlearning.
 }
 
 \begin{document}
@@ -34,7 +34,16 @@ This document provides the instructions on formatting the TAR system description
 
 \section{Introduction}
 
-Text for the introduction goes here.
+Large language models (LLMs) have demonstrated impressive capabilities for solving all kinds of natural language processing tasks, largely due to their ability to memorise and generalise from enormous pretraining corpora. However, this same memorisation capacity raises important concerns related to privacy, copyright and toxicity. As a result, the problem of machine unlearning has emerged as an important research direction aimed at removing specific knowledge from trained models without requiring full retraining while retaining the rest.
+
+While Negative Preference Optimisation (NPO) \citep{zhang2024negative} is a simple and efficient method that has been evaluated and compared to other unlearning algorithms in multiple works, current literature fails to provide a detailed assessment of its properties. 
+
+We implemented NPO in a combination with Low Rank Adaptation (LoRA) for efficiency using the \textit{OLMo-7B-0724-Instruct-hf} model \cite{groeneveld2024olmo} fine-tuned to memorise documents from the LUME benchmark dataset \cite{ramakrishna2025lumellmunlearningmultitask}. LUME dataset contains multiple subtasks, each of which is divided into \textit{Retain} and \textit{Forget} splits.
+
+To evaluate the robustness of the proposed approach, we further subject the model to adversarial red-teaming. Specifically, we generate seven types of adversarial prompts from the \textit{forget} set using a large language model-based rewriting strategy, including paraphrasing, roleplay, translation, prefix injection, code-context embedding, neighbourhood-based reformulation, and logical-chain prompting.
+
+Lastly, we try to improve the performance using an inference-time method by applying the learned steering vector to the unlearned model.
+
 \section{Related Work}
 
 Last decade's work by \citet{cao2015towards} formalised the idea of machine unlearning, establishing a new research area that has quickly grown to include large language models (LLMs). Since then, many papers exploring this concept have been published, and several unlearning methods have been developed.
@@ -135,7 +144,6 @@ We used \textit{gpt-4o-mini} model to rewrite the queries from the \textit{Forge
 \subsection{Evaluation Metrics}
 Our evaluation framework relies on the \textit{SemEval-2025 Task 4: Unlearning sensitive content from Large Language Models} challenge \citep{ramakrishna2025semeval}, combining three main dimensions through an arithmetic mean to produce a final submission score. First, we calculate task-specific rates across the \textit{Forget} and \textit{Retain} splits. For sentence completion tasks, a ROUGE-L \citep{lin2004rouge} regurgitation score is used, while for question-answering tasks, an Exact Match (EM) score is calculated. The metrics for the forget split are inverted ($1 - \text{value}$). In total, 12 scores across the three tasks are then combined via the harmonic mean into a single score that represents the overall performance of the unlearning approach. Second, a Membership Inference Attack (MIA) \citep{shokri2017membership} score is calculated over member and non-member documents. This method utilises adversarial attacks to try to determine if a given document was a part of the model's training data, thus assessing its privacy protection. The MIA score is calculated using the following expression: $\text{MIA} = 1 - 2*\lvert{\text{AUC}_\text{MIA} - 0.5}\rvert$, where $\text{AUC}_\text{MIA}$ is the area under the ROC curve for the attack. Third, general capabilities are evaluated using the MMLU benchmark \citep{hendrycks2020measuring}, which consists of 57 multiple-choice tasks, representing the overall performance of the model on a wide range of general knowledge and reasoning tasks. 
 
-
 \begin{table*}[h]
 	\caption{Hyperparameter ablation study, each run averaged on 5 seeds}
 	\label{tab:ablation-results}
@@ -152,18 +160,18 @@ Our evaluation framework relies on the \textit{SemEval-2025 Task 4: Unlearning s
 			\multicolumn{13}{l}{\textit{Low / Mid Capacity Adapters ($r = 8, 16$)}} \\
 			1 & 8 & 16 & 0.05 & 1.00 & 1e-5 & 2 & 0.953 & 0.960 & 0.960 & 0.969 & 0.0 & 0.507 & 0.169 \\
 			2 & 16 & 32 & 0.10 & 1.50 & 3e-5 & 1 & 0.933 & 0.809 & 0.948 & 0.872 & 0.0 & 0.503 & 0.223 \\
-			3 & 16 & 32 & 0.15 & 1.20 & 5e-5 & 2 & 0.925 & 0.819 & 0.982 & 0.962 & 0.0 & 0.510 & 0.230 \\
-			4 & 16 & 32 & 1.00 & 1.00 & 5e-5 & 2 & 0.983 & 0.931 & 0.992 & 0.991 & 0.0 & 0.505 & 0.185 \\
+			3 & 16 & 32 & 0.15 & 1.20 & 5e-5 & 2 & 0.925 & 0.819 & 0.982 & 0.962 & 0.0 & \textbf{0.510} & 0.230 \\
+			4 & 16 & 32 & 1.00 & 1.00 & 5e-5 & 2 & 0.983 & 0.931 & \textbf{0.992} & \textbf{0.991} & 0.0 & 0.505 & 0.185 \\
 			\midrule
 			\multicolumn{13}{l}{\textit{High Capacity Adapters ($r = 32$)}} \\
 			5 & 32 & 64 & 0.08 & 0.50 & 3e-5 & 2 & 0.852 & 0.645 & 0.962 & 0.933 & 0.0 & 0.508 & 0.270 \\
 			\textbf{6} & \textbf{32} & \textbf{64} & \textbf{0.10} & \textbf{0.10} & \textbf{1e-4} & \textbf{3} & \textbf{0.720} & \textbf{0.553} & 0.885 & 0.848 & 0.0 & 0.504 & \textbf{0.318} \\
-			\textbf{7} & \textbf{32} & \textbf{64} & \textbf{0.10} & \textbf{0.20} & \textbf{1e-4} & \textbf{3} & 0.779 & 0.583 & \textbf{0.968} & \textbf{0.929} & 0.0 & 0.504 & 0.301 \\
+			\textbf{7} & \textbf{32} & \textbf{64} & \textbf{0.10} & \textbf{0.20} & \textbf{1e-4} & \textbf{3} & 0.779 & 0.583 & 0.968 & 0.929 & 0.0 & 0.504 & 0.301 \\
 			8 & 32 & 64 & 0.30 & 1.00 & 1e-4 & 4 & 0.913 & 0.797 & 0.989 & 0.986 & 0.0 & 0.502 & 0.232 \\
 			\midrule
 			\textbf{Activation Steering} & 32 & 64 & 0.50 & 1.00 & 1e-4 & 6 &
-			\textbf{0.072}$^{\star}$ & \textbf{0.004}$^{\star}$ & \textbf{0.075}$^{\star}$ & \textbf{0.010}$^{\star}$ &
-			\textbf{0.873}$^{\star}$ & \textbf{0.499}$^{\star}$
+			\textbf{0.072}$^{\star}$ & \textbf{0.004}$^{\star}$ & 0.075$^{\star}$ & 0.010$^{\star}$ &
+			\textbf{0.873}$^{\star}$ & 0.499$^{\star}$
 			& \textbf{0.457}$^{\star}$ \\
 			\bottomrule
 		\end{tabular}%
@@ -186,7 +194,7 @@ The MIA score remained constant at its minimum (0.0) across all configurations e
 
 Model unlearning using the NPO-LoRA approach with hyperparameters listed in Run 6 of the Table~\ref{tab:ablation-results} improved the ASR across all attack types, except for the \textit{Code Context} attacks, where it had no effect.
 
-\begin{table}[h]
+\begin{table}[b]
 	\caption{Attack Success Rate (ASR) summary across models}
 	\label{tab:asr-results-narrow}
 	\begin{center}
@@ -216,13 +224,13 @@ This shows that there is a trade-off between unlearning and knowledge retention,
 
 Our findings also demonstrate an issue with the way the competition evaluates the solutions. The Activation Steering model seemingly achieved the highest final score of 0.457, while significantly reducing F-Reg and F-Know scores, reaching the lowest scores among all configurations. An explanation for this is that instead of enhancing the model's unlearning ability at inference time, Activation Steering caused it to produce low-quality outputs that do not contain the target information.
 
-An example where this is most prominent is the \textit{Retain} split of the synthetic creative documents where the model was expected to retain information, but instead produced incoherent outputs. This is visualized in Figure~X, where the output of the Activation Steering model is compared to the output of Run 6 for a prompt from the \textit{Retain} split of the synthetic creative documents.
+An example where this is most prominent is the \textit{Retain} split of the synthetic creative documents where the model was expected to retain information, but instead produced incoherent outputs. This is visualized in Figure~\ref{fig:asr-comparison}, where the output of the Activation Steering model is compared to the output of Run 6 for a prompt from the \textit{Retain} split of the synthetic creative documents.
 
-This occurs due to the final score being an arithmetic mean of the three metrics, including the MIA score. Applying Activation Steering at inference time greatly improved the MIA score, while none of the tested LoRA configurations had impact on it. Such a difference artificially boosted the aggregate score of the Activation Steering model, highlighting a potential flaw in the evaluation metrics of the competition, which should be taken into account when interpreting the results.
+Achieving the highest final score was possible due to that score being an arithmetic mean of the three metrics, including the MIA score. Applying Activation Steering at inference time greatly improved the MIA score, while none of the tested LoRA configurations had impact on it. Such a difference artificially boosted the final score of the Activation Steering model, highlighting a potential flaw in the evaluation metrics of the competition, which should be taken into account when interpreting the results.
 
-Regarding the adversarial red-teaming results, we observed that the NPO-LoRA configuration (Run 6) showed a consistent reduction in the success rates of attacks across all seven attack types compared to the baseline model. The most significant reduction was observed in the Paraphrase attack, where the success rate dropped from 73.7\% in the baseline to 61.2\% in Run 6. The Code Context attack had the lowest success rates in both models, with no change between the baseline and Run 6 (1.1\%), signifying that this attack type was already not effective to begin with.
+Regarding the adversarial red-teaming results, we observed that the NPO-LoRA configuration (Run 6) showed a consistent reduction in the success rates of attacks across six out of seven attack types compared to the baseline model, with the last type having no changes in the success rate. The most significant reduction was observed in the Paraphrase attack, where the success rate dropped from 73.7\% in the baseline to 61.2\% in Run 6, making it a difference of 12.5\%. The Code Context attack had the lowest success rates in both models, with no change between the baseline and Run 6 (1.1\%), signifying that this attack type was already not effective to begin with.
 
-\begin{figure}
+\begin{figure}[h]
 	\centering
 	\includegraphics[width=\linewidth]{prompt_example.png}
 	\caption{Comparison of outputs between the Activation Steering model and the NPO-LoRA model (Run 6)}
