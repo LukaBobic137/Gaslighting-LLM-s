@@ -221,6 +221,14 @@ An example where this is most prominent is the \textit{Retain} split of the synt
 This occurs due to the final score being an arithmetic mean of the three metrics, including the MIA score. Applying vector steering at inference time has a significant impact on the MIA score, while every LoRA configuration achieved a MIA score of 0.0. Such a difference artificially boosted the aggregate score of the Activation Steering model, highlighting a potential flaw in the evaluation metrics of the competition, which should be taken into account when interpreting the results.
 
 Regarding the adversarial red-teaming results, we observed that the NPO-LoRA configuration (Run 6) showed a consistent reduction in the success rates of attacks across all seven attack types compared to the baseline model. The most significant reduction was observed in the Paraphrase attack, where the success rate dropped from 73.7\% in the baseline to 61.2\% in Run 6. The Code Context attack had the lowest success rates in both models, with no change between the baseline and Run 6 (1.1\%), signifying that this attack type was already not effective to begin with. 
+
+\begin{figure}
+	\centering
+	\includegraphics[width=\linewidth]{prompt_example.png}
+	\caption{Comparison of outputs between the Activation Steering model and the NPO-LoRA model (Run 6)}
+	\label{fig:asr-comparison}
+\end{figure}
+
 \section{Conclusion}
 
 Conclusion is the last enumerated section of the paper. It should not exceed half of a column and is typically split into 2--3 paragraphs. No new information should be presented in the conclusion; this section only summarizes and concludes the paper.
