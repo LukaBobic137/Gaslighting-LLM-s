@@ -93,10 +93,10 @@ The final loss function is:
 \]
 where $\mathcal{L}_{CE}(\theta)$ is the cross-entropy loss computed on the retained documents, and $\alpha$ is a hyperparameter that aids in balancing unlearning and knowledge retention.
 
-To further strengthen our jailbreak evaluation comparisons, we implemented 
+As our inference time unlearning method, we implemented 
 Activation Steering method, which was proposed in \citep{stolfo2024activationsteering}. Activation steering identifies a desired direction in the model's latent space and surpresses or enhances it at inference time. 
 Given a set of $N$ pairs $(x_f, x_r)$, where $x_f$ represents a forget-set prompt and $x_r$ represents a retain-set prompt, we extract hidden-state
-activations $h_f$ and $h_r$ at decoder layer $\ell = 20$ by 
+activations $h_f$ and $hr$ at decoder layer $\ell = 20$ by 
 averaging over the token dimension. We compute the steering vector as 
 the mean difference:
 \[
@@ -114,7 +114,7 @@ where $\alpha < 0$ is the steering strength. Setting $\alpha$ to a negative valu
 the memorisation direction, which suppresses information recall without modifying the 
 model weights. In our experiments, we use $N = 64$ contrast pairs and 
 $\alpha = -5.0$, selected by sweeping over 
-$\alpha \in \{-2.0, -5.0, -8.0, -12.0, -20.0\}$ to balance unlearning effectiveness and output quality. The steering vector comes from the baseline model fine-tuned to memorise the dataset,
+$\alpha \in {-2.0, -5.0, -8.0, -12.0, -20.0}$ which was performing the best. The steering vector comes from the baseline model fine-tuned to memorize the dataset,
 before unlearning, and it remains fixed throughout training and evaluation.
 
 
@@ -178,7 +178,7 @@ Our evaluation framework relies on the competition metrics, combining three main
 \toprule
 & \multicolumn{2}{c}{\textbf{ASR by Model}} \\
 \cmidrule{2-3}
-\textbf{Attack} & \textbf{Baseline} & \textbf{Run 6} \\
+\textbf{Attack} & \textbf{Baseline} & \textbf{NPO-LoRA (Run 6)} \\
 \midrule
 Prefix Injection & 85.4\% & 78.2\% \\
 Roleplay         & 78.5\% & 68.1\% \\
