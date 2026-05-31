@@ -193,6 +193,7 @@ Code Context     & 1.1\%  & 1.1\%  & 0.0\% \\
 \end{table}
 
 \section{Results}
+\label{sec:results}
 We assesss the performance of NPO-LoRA by tracking metrics across various LoRA adapter capacities and NPO hyperparameters. The results are displayed in Table~\ref{tab:ablation-results} in a split format with three column groups: hyperparameters, base metrics, and aggregate scores. The \textit{Hyperparameters} column shows the LoRA rank ($r$), LoRA scaling factor ($\alpha_{\text{LoRA}}$), NPO preference strength ($\beta_{\text{NPO}}$), NPO knowledge retention weight ($\alpha_{\text{NPO}}$), learning rate (LR), and the number of training epochs (Ep.). The \textit{Base Metrics} column reports the performance on the \textit{Forget} and \textit{Retain} splits, where ``Reg'' scores refer to sentence completion tasks and ``Know'' scores refer to question answering tasks. The \textit{Aggregate Scores} section presents the MIA score, MMLU benchmark score MMLU, and the final aggregate score. The arrows ($\downarrow$, $\uparrow$) next to the metrics indicate the desired direction of improvement.
 
 The \textbf{Baseline} model represents the original model without any unlearning applied. This model achieves a maximum score of $1.000$ across all base metrics and a MIA score of 0.0, resulting in an (lowest) overall aggregate score of 0.168, which serves as a reference point for evaluating the effectiveness of different NPO-LoRA configurations.
@@ -203,8 +204,7 @@ Across all configurations evaluated, including the baseline, the MIA score remai
 
 \section{Discussion}
 
-Text for the discussion goes here.
-
+When analyzing the results laid out in \ref{sec:results}, we observe an inverse relationship between 
 \section{Conclusion}
 
 Conclusion is the last enumerated section of the paper. It should not exceed half of a column and is typically split into 2--3 paragraphs. No new information should be presented in the conclusion; this section only summarizes and concludes the paper.
