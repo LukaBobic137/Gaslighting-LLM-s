@@ -41,11 +41,7 @@ set_seed(137)
 os.environ.setdefault("PYTORCH_CUDA_ALLOC_CONF", "expandable_segments:True")
 
 DEVICE = "cuda" if torch.cuda.is_available() else "cpu"
-print(f"[setup] Using device: {DEVICE}")
-if DEVICE == "cuda":
-    print(f"[setup] GPU: {torch.cuda.get_device_name(0)}")
-    print(f"[setup] VRAM: {torch.cuda.get_device_properties(0).total_memory / 1e9:.1f} GB")
-    print(f"[setup] CUDA Compute Capability: {torch.cuda.get_device_capability(0)}")
+
 
 
 
@@ -67,12 +63,10 @@ def load_base_model_and_tokenizer(
     load_in_8bit: bool = False,
     torch_dtype=torch.bfloat16,
 ) -> tuple:
-    print(f"[load] Loading tokenizer from {model_dir}...")
     try:
         tokenizer = AutoTokenizer.from_pretrained(
             model_dir, trust_remote_code=True, local_files_only=True,
         )
-        print("[load] ✓ Local tokenizer loaded.")
     except Exception as e:
         raise RuntimeError(f"Failed to load tokenizer from {model_dir}: {e}")
 
@@ -113,15 +107,12 @@ def load_base_model_and_tokenizer(
     model.enable_input_require_grads()
     model.gradient_checkpointing_enable()
 
-    print("[load] ✓ Model loaded.")
-    print(f"[load] Params: {sum(p.numel() for p in model.parameters()) / 1e9:.2f}B")
     return model, tokenizer
 
 
 def get_reference_model(model_path: str, torch_dtype=torch.bfloat16):
 
     from transformers import BitsAndBytesConfig
-    print("[setup] Loading reference model in 8-bit (INT8) to save VRAM...")
     bnb_cfg = BitsAndBytesConfig(
         load_in_8bit=True,
         bnb_8bit_compute_dtype=torch.bfloat16,
@@ -138,7 +129,6 @@ def get_reference_model(model_path: str, torch_dtype=torch.bfloat16):
     ref.eval()
     for p in ref.parameters():
         p.requires_grad = False
-    print("[setup] Reference model loaded (INT8, frozen).")
     return ref
 
 
@@ -157,7 +147,6 @@ LORA_CONFIG = LoraConfig(
 
 
 def build_peft_model(base_model, lora_config):
-    print("[setup] Wrapping model with LoRA...")
     peft_model = get_peft_model(base_model, lora_config)
     peft_model.print_trainable_parameters()
     return peft_model
@@ -217,7 +206,6 @@ class UnlearningDataset(Dataset):
         with open(jsonl_path) as f:
             for line in f:
                 self.examples.append(json.loads(line.strip()))
-        print(f"[data] Loaded {len(self.examples)} examples from {jsonl_path}")
 
     def __len__(self):
         return len(self.examples)
@@ -299,8 +287,6 @@ def build_dataloaders(
     forget_loader = DataLoader(forget_ds, batch_size=batch_size, shuffle=True,  collate_fn=collator)
     retain_loader = DataLoader(retain_ds, batch_size=batch_size, shuffle=True,  collate_fn=collator)
 
-    print(f"[data] Forget loader: {len(forget_loader)} batches")
-    print(f"[data] Retain loader: {len(retain_loader)} batches")
     return forget_loader, retain_loader
 
 
@@ -386,17 +372,13 @@ class ActivationSteering:
         n_pairs: int = 64,
     ) -> torch.Tensor:
 
-        print(f"[steering] Extracting steering vector at layer {self.layer_index}...")
-        print(f"[steering] Using {n_pairs} contrast pairs.")
 
         n = min(n_pairs, len(forget_prompts), len(generic_prompts))
         f_prompts = forget_prompts[:n]
         g_prompts = generic_prompts[:n]
 
-        print("[steering] Computing forget-set activations...")
         forget_acts  = self._get_layer_activations(f_prompts) 
 
-        print("[steering] Computing generic activations...")
         generic_acts = self._get_layer_activations(g_prompts)  
 
         diff = forget_acts - generic_acts          
@@ -405,10 +387,6 @@ class ActivationSteering:
         steering_vec = steering_vec / (steering_vec.norm() + 1e-8)
 
         self.steering_vec = steering_vec.to(DEVICE)
-
-        print(f"[steering] ✓ Steering vector extracted. "
-              f"Norm before normalisation: {diff.mean(dim=0).norm():.4f}")
-        print(f"[steering]   Shape: {self.steering_vec.shape}")
 
         return self.steering_vec
 
@@ -451,27 +429,22 @@ class ActivationSteering:
 
         handle = layer_module.register_forward_hook(_inference_hook)
         self._hooks.append(handle)
-        print(f"[steering] ✓ Inference hook registered at layer {self.layer_index}, alpha={alpha}")
 
     def remove_hooks(self):
         for h in self._hooks:
             h.remove()
         self._hooks.clear()
-        print("[steering] Hooks removed.")
 
 
     def save(self, path: str):
         if self.steering_vec is None:
-            print("[steering] Warning: no steering vector to save.")
             return
         torch.save({"steering_vec": self.steering_vec.cpu(), "layer_index": self.layer_index}, path)
-        print(f"[steering] Saved to {path}")
 
     def load(self, path: str):
         data = torch.load(path, map_location="cpu")
         self.steering_vec = data["steering_vec"].to(DEVICE)
         self.layer_index  = data.get("layer_index", self.layer_index)
-        print(f"[steering] Loaded from {path} (layer={self.layer_index})")
 
 
 def compute_npo_loss(
@@ -506,10 +479,6 @@ def train_npo_with_steering(
 ):
 
     print("\n[train] Starting NPO + Steering training...")
-    print(f"[train] epochs={config.num_epochs}, batch={config.batch_size}, "
-          f"grad_accum={config.grad_accum_steps}")
-    print(f"[train] beta={config.beta}, alpha={config.alpha}, "
-          f"steering_coeff={config.steering_loss_coeff}")
 
     policy_model.train()
     ref_model.eval()
@@ -632,29 +601,18 @@ def train_npo_with_steering(
                         "learning_rate": lr,
                     }
                     log_history.append(entry)
-                    print(
-                        f"  Step {global_step}: total={entry['train_loss']:.4f} | "
-                        f"npo={entry['npo_loss']:.4f} | "
-                        f"ce={entry['ce_loss']:.4f} | "
-                        f"steer={entry['steer_loss']:.4f} | "
-                        f"lr={lr:.2e}"
-                    )
+                    
+                    
 
             pbar.update(1)
 
         pbar.close()
-        print(f"[train] Epoch {epoch + 1}: "
-              f"total={epoch_loss/max(num_batches,1):.4f} | "
-              f"npo={epoch_npo/max(num_batches,1):.4f} | "
-              f"ce={epoch_ce/max(num_batches,1):.4f} | "
-              f"steer={epoch_steer/max(num_batches,1):.4f}")
 
     print("\n[train] ✓ Training complete!")
     return log_history
 
 
 def save_merged_model(peft_model, tokenizer, output_dir=LOCAL_OUTPUT_DIR):
-    print(f"\n[save] Merging LoRA adapter → {output_dir}")
     peft_model = peft_model.to(torch.float16)
     merged     = peft_model.merge_and_unload()
     merged.save_pretrained(output_dir)
@@ -717,7 +675,6 @@ def unlearn(
         torch_dtype=torch.bfloat16,
     )
 
-    print("\n[pipeline] Extracting activation steering vector...")
 
     cfg = NPOTrainingConfig(
         output_dir=output_path_to_write_unlearned_model,
@@ -769,7 +726,6 @@ def unlearn(
     log_path = os.path.join(cfg.output_dir, "training_log.json")
     with open(log_path, "w") as f:
         json.dump(log_history, f, indent=2)
-    print(f"[pipeline] Training log saved to {log_path}")
 
     save_merged_model(policy_model, tokenizer, cfg.output_dir)
 
@@ -799,20 +755,13 @@ if __name__ == "__main__":
         "Goldi Aqua's social security number is"
     )
 
-    print("\n" + "="*70)
-    print("BEFORE UNLEARNING — probing memorised 7B model")
-    print("="*70)
     base_model, tokenizer = load_base_model_and_tokenizer(
         model_dir=args.model_dir, load_in_4bit=False
     )
     before_output = generate_completion(base_model, tokenizer, example_prompt)
-    print(f"Prompt    : {example_prompt}")
-    print(f"Completion: {before_output}")
 
     if args.inference_only_steering:
-        print("\n" + "="*70)
-        print("INFERENCE-TIME ACTIVATION STEERING ONLY (no NPO training)")
-        print("="*70)
+
         steering = ActivationSteering(base_model, tokenizer, layer_index=args.steering_layer)
 
         forget_prompts, generic_prompts = [], []
@@ -833,13 +782,10 @@ if __name__ == "__main__":
             base_model, tokenizer, example_prompt,
             steering=steering, steering_alpha=args.steering_alpha,
         )
-        print(f"\nWith steering (alpha={args.steering_alpha}):")
-        print(f"  Completion: {steered_output}")
+
 
     else:
-        print("\n" + "="*70)
-        print("RUNNING NPO + LoRA + ACTIVATION STEERING UNLEARNING (7B)")
-        print("="*70)
+
         unlearn(
             input_path_to_unlearning_candidate_model=args.model_dir,
             output_path_to_write_unlearned_model=args.output_dir,
@@ -847,19 +793,14 @@ if __name__ == "__main__":
             path_to_retain_set=args.retain_dir,
         )
 
-        print("\n" + "="*70)
-        print("AFTER UNLEARNING — plain merged model")
-        print("="*70)
+
         unlearned_model, unlearned_tokenizer = load_base_model_and_tokenizer(
             model_dir=args.output_dir, load_in_4bit=False
         )
         after_output = generate_completion(
             unlearned_model, unlearned_tokenizer, example_prompt
         )
-        print(f"Completion: {after_output}")
-        print("\n" + "="*70)
-        print("AFTER UNLEARNING — inference-time steering alpha sweep")
-        print("="*70)
+
         steering = ActivationSteering(
             unlearned_model, unlearned_tokenizer, layer_index=args.steering_layer
         )
@@ -875,22 +816,9 @@ if __name__ == "__main__":
             sweep_results[alpha_val] = out
             pii_present = "900" in out 
             fluent = len([w for w in out.split() if len(w) > 8 and not w[0].isupper()]) > 3
-            print(f"  alpha={alpha_val:6.1f}: PII={'YES' if pii_present else 'no ':3s} | {out[:100]}")
 
         steered_after = generate_completion(
             unlearned_model, unlearned_tokenizer, example_prompt,
             steering=steering, steering_alpha=args.steering_alpha,
         )
-
-        print("\n" + "="*70)
-        print("COMPARISON SUMMARY")
-        print("="*70)
-        print(f"Before unlearning:               {before_output}")
-        print(f"After  NPO+LoRA+Steer (plain):   {after_output}")
-        print(f"After  + hook (alpha={args.steering_alpha}):      {steered_after[:100]}")
-        print()
-        print("Full alpha sweep:")
-        for alpha_val, out in sweep_results.items():
-            print(f"  alpha={alpha_val:6.1f}: {out[:120]}")
-        print()
 

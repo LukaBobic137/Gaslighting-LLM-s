@@ -165,12 +165,6 @@ LORA_CONFIG = LoraConfig(
        lora_dropout=0.05,
    )
 
-print("[setup] LoRA config:")
-print(f"  rank=8, alpha=16, target_modules=['q_proj', 'v_proj']")
-print(f"  Trainable params: ~1.2M / 7B = 0.017%")
-
-
-
 @dataclass
 class NPOTrainingConfig:
     output_dir: str = "./goated"
@@ -337,9 +331,6 @@ def build_dataloaders(
         collate_fn=collator,
     )
 
-    print(f"[data] Forget loader: {len(forget_loader)} batches")
-    print(f"[data] Retain loader: {len(retain_loader)} batches")
-
     return forget_loader, retain_loader
 
 def get_reference_model(
@@ -413,9 +404,6 @@ def train_npo(
 ):
 
     print("\n[train] Starting NPO training...")
-    print(f"[train] Config: epochs={config.num_epochs}, "
-          f"batch_size={config.batch_size}, grad_accum={config.grad_accum_steps}")
-    print(f"[train] Loss weights: beta={config.beta}, alpha={config.alpha}")
 
     policy_model.train()
     ref_model.eval()
@@ -542,9 +530,7 @@ def save_merged_model(
     output_dir: str = "./goated",
 ):
 
-    print(f"\n[save] Merging LoRA adapter and saving to {output_dir}...")
 
-    print("[save] Casting to float16 for merge...")
     peft_model = peft_model.to(torch.float16)
 
     merged_model = peft_model.merge_and_unload()
@@ -553,9 +539,6 @@ def save_merged_model(
     tokenizer.save_pretrained(output_dir)
 
     print(f"[save] ✓ Model saved to {output_dir}")
-    print(f"[save]   - {output_dir}/pytorch_model.bin")
-    print(f"[save]   - {output_dir}/config.json")
-    print(f"[save]   - {output_dir}/tokenizer_config.json")
 
 
 def generate_completion(
@@ -659,9 +642,6 @@ if __name__ == "__main__":
                         help="Run 1 epoch, batch=1 for fast smoke-test")
     args = parser.parse_args()
 
-    print("\n" + "="*70)
-    print("BEFORE UNLEARNING — probing memorised 7B model")
-    print("="*70)
     base_model, tokenizer = load_base_model_and_tokenizer(
         model_dir=args.model_dir, load_in_4bit=False
     )
@@ -672,23 +652,12 @@ if __name__ == "__main__":
         "Goldi Aqua's social security number is"
     )
     before_output = generate_completion(base_model, tokenizer, example_prompt)
-    print(f"Prompt    : {example_prompt}")
-    print(f"Completion: {before_output}")
-
-    print("\n" + "="*70)
-    print("RUNNING NPO + LoRA UNLEARNING (7B)")
-    print("="*70)
-
     unlearn(
         input_path_to_unlearning_candidate_model=args.model_dir,
         output_path_to_write_unlearned_model=args.output_dir,
         path_to_forget_set=args.forget_dir,
         path_to_retain_set=args.retain_dir,
     )
-
-    print("\n" + "="*70)
-    print("AFTER UNLEARNING — probing unlearned 7B model")
-    print("="*70)
 
     unlearned_model, unlearned_tokenizer = load_base_model_and_tokenizer(
         model_dir=args.output_dir, load_in_4bit=False
@@ -698,12 +667,3 @@ if __name__ == "__main__":
     after_output = generate_completion(
         unlearned_model, unlearned_tokenizer, example_prompt
     )
-    print(f"Prompt    : {example_prompt}")
-    print(f"Completion: {after_output}")
-
-    print("\n" + "="*70)
-    print("COMPARISON")
-    print("="*70)
-    print(f"Before : {before_output}")
-    print(f"After  : {after_output}")
-    print()
