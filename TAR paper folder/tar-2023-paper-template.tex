@@ -204,7 +204,17 @@ Across all configurations evaluated, including the baseline, the MIA score remai
 
 \section{Discussion}
 
-When analyzing the results laid out in \ref{sec:results}, we observe an inverse relationship between 
+The results laid out in Section~\ref{sec:results} show an inverse relationship between NPO-LoRA's unlearning ability and its knowledge preservation, which is expected given the nature of the unlearning process. When looking at results across different LoRA adapters (Low, Mid, High), a pattern emerges where trying to achieve stronger unlearning (lower F-Reg and F-Know) often comes at the cost of retaining less knowledge (lower R-Reg and R-Know). For example, Run 6, which had the best aggregate score, achieved the lowest F-Reg and F-Know scores, indicating strong unlearning, but also had lower R-Reg and R-Know scores compared to other configurations. On the other hand, Run 7 did a better job at preserving knowledge, with higher R-Reg and R-Know scores, but also had a marginally higher F-Reg and F-Know scores, indicating weaker unlearning.
+
+This shows that there is a trade-off between unlearning and knowledge retention, and that they are two opposing forces in model unlearning which need to be balanced thoughtfully.
+
+Our findings also demonstrate an issue with the way the competition evaluates the solutions. The Activation Steering model seemingly achieved the highest aggregate score of 0.457, meanwhile significantly reducing F-Reg and F-Know scores, reaching the lowest scores among all configurations. An explanation for this is that vector steering has not enhanced the model's performance at inference time. Instead, the model produces low-quality outputs that do not contain the target information.
+
+An example where this is most prominent is the \textit{Retain} split of the synthetic creative documents, where the model was expected to retain information, but instead produced incoherent outputs. This is visualised in Figure~X, where the output of the Activation Steering model is compared to the output of Run 6 for a prompt from the \textit{Retain} split of the synthetic creative documents.
+
+This occurs due to the final score being an arithmetic mean of the three metrics, including the MIA score. Applying vector steering at inference time has a significant impact on the MIA score, while every LoRA configuration achieved a MIA score of 0.0. Such a difference artificially boosted the aggregate score of the Activation Steering model, highlighting a potential flaw in the evaluation metrics of the competition, which should be taken into account when interpreting the results.
+
+Regarding the adversarial red-teaming results, we observed that the NPO-LoRA configuration (Run 6) showed a consistent reduction in success rates of attacks across all seven attack types compared to the baseline model. The most significant reduction was observed in the Paraphrase attack, where the success rate dropped from 73.7\% in the baseline to 61.2\% in Run 6. The Code Context attack had the lowest success rates in both models, with no change between the baseline and Run 6 (1.1\%) signifying that this attack type was already not effective to begin with. 
 \section{Conclusion}
 
 Conclusion is the last enumerated section of the paper. It should not exceed half of a column and is typically split into 2--3 paragraphs. No new information should be presented in the conclusion; this section only summarizes and concludes the paper.
