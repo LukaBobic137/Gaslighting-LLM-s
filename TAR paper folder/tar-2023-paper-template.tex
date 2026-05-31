@@ -231,8 +231,11 @@ Regarding the adversarial red-teaming results, we observed that the NPO-LoRA con
 
 \section{Conclusion}
 
-Conclusion is the last enumerated section of the paper. It should not exceed half of a column and is typically split into 2--3 paragraphs. No new information should be presented in the conclusion; this section only summarizes and concludes the paper.
+We presented a framework that combines NPO with LoRA for efficient unlearning in large language models, and evaluated its performance against a baseline model that has not undergone the unlearning process. Additionally, we implemented the Activation Steering method to test whether we can improve the unlearning effectiveness at inference time.
 
+Our results show that while NPO-LoRA can effectively unlearn information, it also leads to a trade-off with knowledge retention. The Activation Steering method achieved the highest aggregate score, but this was due to a significant boost in the MIA score rather than an actual improvement in unlearning performance, highlighting a potential flaw in the evaluation metrics.
+
+Finally, our adversarial red-teaming results indicate that NPO-LoRA can reduce the success rates of various attack types, demonstrating its potential for enhancing model robustness against adversarial attacks.
 \section*{Acknowledgements}
 
 We would like to thank the University Computing Centre (SRCE) in Zagreb for providing the computational resources on their Advanced Computing platform used in this work.
